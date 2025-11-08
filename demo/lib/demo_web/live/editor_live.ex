@@ -64,37 +64,35 @@ defmodule DemoWeb.EditorLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <DemoWeb.Layouts.app flash={@flash}>
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-5xl">
-          <h1 class="text-3xl font-bold mb-6">ExEditor Demo</h1>
+    <div class="min-h-screen bg-[#1e1e1e] text-[#d4d4d4]">
+      <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-6 text-white">ExEditor Demo</h1>
 
-          <div class="mb-4 flex items-center justify-between">
-            <div class="text-sm text-gray-600">
-              Ln {@cursor_line}, Col {@cursor_col}
-            </div>
+        <div class="mb-4 flex items-center justify-between">
+          <div class="text-sm text-gray-400">
+            Ln {@cursor_line}, Col {@cursor_col}
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <h2 class="text-lg font-semibold mb-2 text-white">Editor</h2>
+            <textarea
+              id="editor-textarea"
+              phx-hook="EditorSync"
+              phx-change="update_content"
+              class="ex-editor-textarea font-mono text-sm w-full h-[600px] p-4 bg-[#1e1e1e] text-[#d4d4d4] border border-[#3e3e3e] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              spellcheck="false"
+            ><%= ExEditor.Editor.get_content(@editor) %></textarea>
           </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <h2 class="text-lg font-semibold mb-2">Editor</h2>
-              <textarea
-                id="editor-textarea"
-                phx-hook="EditorSync"
-                phx-change="update_content"
-                class="ex-editor-textarea font-mono text-sm w-full h-96 p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                spellcheck="false"
-              ><%= ExEditor.Editor.get_content(@editor) %></textarea>
-            </div>
-
-            <div>
-              <h2 class="text-lg font-semibold mb-2">Raw Content</h2>
-              <pre class="font-mono text-sm w-full h-96 p-4 border border-gray-300 rounded-lg bg-gray-50 overflow-auto"><%= ExEditor.Editor.get_content(@editor) %></pre>
-            </div>
+          <div>
+            <h2 class="text-lg font-semibold mb-2 text-white">Raw Content</h2>
+            <pre class="font-mono text-sm w-full h-[600px] p-4 bg-[#252525] text-[#d4d4d4] border border-[#3e3e3e] rounded-lg overflow-auto"><%= ExEditor.Editor.get_content(@editor) %></pre>
           </div>
         </div>
       </div>
-    </DemoWeb.Layouts.app>
+    </div>
     """
   end
 
