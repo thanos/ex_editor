@@ -1,4 +1,4 @@
-defmodule ExEditorWeb.CoreComponents do
+defmodule DemoWeb.CoreComponents do
   @moduledoc """
   Provides core UI components.
 
@@ -449,9 +449,9 @@ defmodule ExEditorWeb.CoreComponents do
     # uncommenting and adjusting the following code:
 
     # if count = opts[:count] do
-    #   Gettext.dngettext(ExEditorWeb.Gettext, "errors", msg, msg, count, opts)
+    #   Gettext.dngettext(DemoWeb.Gettext, "errors", msg, msg, count, opts)
     # else
-    #   Gettext.dgettext(ExEditorWeb.Gettext, "errors", msg, opts)
+    #   Gettext.dgettext(DemoWeb.Gettext, "errors", msg, opts)
     # end
 
     Enum.reduce(opts, msg, fn {key, value}, acc ->
