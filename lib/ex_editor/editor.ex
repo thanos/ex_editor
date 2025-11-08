@@ -7,7 +7,6 @@ defmodule ExEditor.Editor do
   """
 
   alias ExEditor.Document
-  alias ExEditor.Plugin
 
   defstruct document: %Document{},
             plugins: [],
