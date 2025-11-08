@@ -30,10 +30,10 @@ defmodule ExEditor.Editor do
   ## Examples
 
       iex> ExEditor.Editor.new()
-      %ExEditor.Editor{document: %ExEditor.Document{lines: [""]}}
+      %ExEditor.Editor{document: %ExEditor.Document{lines: [""]}, options: [], plugins: []}
 
       iex> ExEditor.Editor.new(content: "hello\\nworld")
-      %ExEditor.Editor{document: %ExEditor.Document{lines: ["hello", "world"]}}
+      %ExEditor.Editor{document: %ExEditor.Document{lines: ["hello", "world"]}, options: [content: "hello\\nworld"], plugins: []}
   """
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
