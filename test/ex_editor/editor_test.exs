@@ -42,12 +42,14 @@ defmodule ExEditor.EditorTest do
 
     test "notifies plugins of content change" do
       # Mock plugin behavior
+      test_pid = self()
+
       receive_messages_pid = self()
 
       defmodule MockPlugin do
         @behaviour ExEditor.Plugin
         def on_event(:handle_change, _payload, editor) do
-          send(receive_messages_pid, {:plugin_event, :handle_change})
+          send(test_pid, {:plugin_event, :handle_change})
           {:ok, editor}
         end
 
