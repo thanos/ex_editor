@@ -6,7 +6,7 @@
     </div>
 
     <div class="bg-[#252526] rounded-lg shadow-2xl overflow-hidden border border-[#3e3e42]">
-      <!-- Editor Header -->
+      <%!-- Editor Header --%>
       <div class="bg-[#2d2d30] px-4 py-2 border-b border-[#3e3e42] flex items-center justify-between">
         <div class="flex items-center gap-2">
           <div class="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
@@ -17,10 +17,10 @@
         <div class="w-12"></div>
       </div>
 
-      <!-- Editor Content -->
+      <%!-- Editor Content --%>
       <div class="relative font-mono text-sm">
         <div class="flex">
-          <!-- Line Numbers -->
+          <%!-- Line Numbers --%>
           <div class="bg-[#1e1e1e] text-[#858585] text-right py-4 px-3 select-none border-r border-[#3e3e42]">
             <div class="leading-6">1</div>
             <div class="leading-6">2</div>
@@ -36,20 +36,18 @@
             <div class="leading-6">12</div>
           </div>
 
-          <!-- Code Content -->
-          <div class="flex-1 py-4 px-4 text-[#d4d4d4] overflow-auto">
-            <div class="leading-6"><span class="text-[#d4d4d4]">{</span></div>
-            <div class="leading-6">  <span class="text-[#9cdcfe]">"name"</span><span class="text-[#d4d4d4]">:</span> <span class="text-[#ce9178]">"ExEditor"</span><span class="text-[#d4d4d4]">,</span></div>
-            <div class="leading-6">  <span class="text-[#9cdcfe]">"version"</span><span class="text-[#d4d4d4]">:</span> <span class="text-[#ce9178]">"0.1.0"</span><span class="text-[#d4d4d4]">,</span></div>
-            <div class="leading-6">  <span class="text-[#9cdcfe]">"description"</span><span class="text-[#d4d4d4]">:</span> <span class="text-[#ce9178]">"Headless code editor"</span><span class="text-[#d4d4d4]">,</span></div>
-            <div class="leading-6">  <span class="text-[#9cdcfe]">"features"</span><span class="text-[#d4d4d4]">:</span> <span class="text-[#d4d4d4]">[</span></div>
-            <div class="leading-6">    <span class="text-[#ce9178]">"Line numbering"</span><span class="text-[#d4d4d4]">,</span></div>
-            <div class="leading-6">    <span class="text-[#ce9178]">"Plugin system"</span><span class="text-[#d4d4d4]">,</span></div>
-            <div class="leading-6">    <span class="text-[#ce9178]">"LiveView native"</span></div>
-            <div class="leading-6">  <span class="text-[#d4d4d4]">]</span></div>
-            <div class="leading-6"><span class="text-[#d4d4d4]">}</span></div>
-            <div class="leading-6"></div>
-            <div class="leading-6"></div>
+          <%!-- Code Content --%>
+          <div class="flex-1 py-4 px-4 text-[#d4d4d4] overflow-auto" phx-no-format>
+<div class="leading-6">&#123;</div>
+<div class="leading-6">  <span class="text-[#9cdcfe]">&quot;name&quot;</span>: <span class="text-[#ce9178]">&quot;ExEditor&quot;</span>,</div>
+<div class="leading-6">  <span class="text-[#9cdcfe]">&quot;version&quot;</span>: <span class="text-[#ce9178]">&quot;0.1.0&quot;</span>,</div>
+<div class="leading-6">  <span class="text-[#9cdcfe]">&quot;description&quot;</span>: <span class="text-[#ce9178]">&quot;Headless code editor&quot;</span>,</div>
+<div class="leading-6">  <span class="text-[#9cdcfe]">&quot;features&quot;</span>: [</div>
+<div class="leading-6">    <span class="text-[#ce9178]">&quot;Line numbering&quot;</span>,</div>
+<div class="leading-6">    <span class="text-[#ce9178]">&quot;Plugin system&quot;</span>,</div>
+<div class="leading-6">    <span class="text-[#ce9178]">&quot;LiveView native&quot;</span></div>
+<div class="leading-6">  ]</div>
+<div class="leading-6">&#125;</div>
           </div>
         </div>
       </div>
@@ -57,11 +55,11 @@
 
     <div class="mt-6 text-center">
       <p class="text-[#858585] text-sm">
-        Pure Elixir • LiveView Native • Plugin Architecture
+        Pure Elixir &bull; LiveView Native &bull; Plugin Architecture
       </p>
     </div>
 
-    <!-- Feature Cards -->
+    <%!-- Feature Cards --%>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12">
       <div class="bg-[#252526] rounded-lg p-6 border border-[#3e3e42]">
         <div class="text-[#4ec9b0] text-2xl mb-2">⚡</div>
