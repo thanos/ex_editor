@@ -129,7 +129,7 @@ defmodule DemoWeb.EditorLiveTest do
       {:ok, _view, html} = live(conn, "/")
 
       # Verify grid layout
-      assert html =~ "grid grid-cols-2"
+      assert html =~ "grid grid-cols-1 lg:grid-cols-2"
 
       # Verify textarea editor
       assert html =~ "<textarea"
