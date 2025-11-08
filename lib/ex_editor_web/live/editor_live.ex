@@ -9,6 +9,8 @@ defmodule ExEditorWeb.EditorLive do
   """
 
   use ExEditorWeb, :live_view
+
+  alias ExEditor.Editor
   alias ExEditor.{Editor, Document}
 
   @impl true
