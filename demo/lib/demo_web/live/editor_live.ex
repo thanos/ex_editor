@@ -48,13 +48,7 @@ defmodule DemoWeb.EditorLive do
   end
 
   @impl true
-  def handle_event("update_cursor", params, socket) do
-    %{"selection_start" => start_pos} = params
-    content = ExEditor.Editor.get_content(socket.assigns.editor)
-
-    # Calculate line and column from cursor position
-    {line, col} = calculate_cursor_position(content, start_pos)
-
+  def handle_event("update_cursor", %{"line" => line, "col" => col}, socket) do
     {:noreply,
      socket
      |> assign(:cursor_line, line)
@@ -68,7 +62,7 @@ defmodule DemoWeb.EditorLive do
       <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold mb-6 text-white">ExEditor Demo</h1>
 
-        <div class="mb-4 flex items-center justify-between">
+        <div id="cursor-position" class="mb-4 flex items-center justify-between">
           <div class="text-sm text-gray-400">
             Ln {@cursor_line}, Col {@cursor_col}
           </div>
@@ -77,18 +71,23 @@ defmodule DemoWeb.EditorLive do
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
             <h2 class="text-lg font-semibold mb-2 text-white">Editor</h2>
-            <textarea
-              id="editor-textarea"
-              phx-hook="EditorSync"
-              phx-change="update_content"
-              class="ex-editor-textarea font-mono text-sm w-full h-[600px] p-4 bg-[#1e1e1e] text-[#d4d4d4] border border-[#3e3e3e] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              spellcheck="false"
-            ><%= ExEditor.Editor.get_content(@editor) %></textarea>
+            <form phx-change="update_content">
+              <textarea
+                id="editor-textarea"
+                name="content"
+                phx-hook="EditorSync"
+                class="ex-editor-textarea font-mono text-sm w-full h-[600px] p-4 bg-[#1e1e1e] text-[#d4d4d4] border border-[#3e3e3e] rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                spellcheck="false"
+              ><%= ExEditor.Editor.get_content(@editor) %></textarea>
+            </form>
           </div>
 
           <div>
             <h2 class="text-lg font-semibold mb-2 text-white">Raw Content</h2>
-            <pre class="font-mono text-sm w-full h-[600px] p-4 bg-[#252525] text-[#d4d4d4] border border-[#3e3e3e] rounded-lg overflow-auto"><%= ExEditor.Editor.get_content(@editor) %></pre>
+            <pre
+              id="raw-content"
+              class="font-mono text-sm w-full h-[600px] p-4 bg-[#252525] text-[#d4d4d4] border border-[#3e3e3e] rounded-lg overflow-auto"
+            ><%= ExEditor.Editor.get_content(@editor) %></pre>
           </div>
         </div>
       </div>
