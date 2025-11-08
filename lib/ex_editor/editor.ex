@@ -73,9 +73,10 @@ defmodule ExEditor.Editor do
     editor = %{editor | document: document}
 
     # Notify plugins of change
-    case notify_plugins(editor, :handle_change) do
-      {:ok, updated_doc} ->
-        {:ok, %{editor | document: updated_doc}}
+    # Pass an empty payload
+    case notify_plugins(editor, :handle_change, %{}) do
+      {:ok, updated_editor} ->
+        {:ok, updated_editor}
 
       {:error, _} = error ->
         error
@@ -98,16 +99,28 @@ defmodule ExEditor.Editor do
 
   # Private Functions
 
-  defp notify_plugins(%__MODULE__{document: document, plugins: plugins}, callback) do
-    Enum.reduce_while(plugins, {:ok, document}, fn plugin_module, {:ok, doc} ->
-      if function_exported?(plugin_module, callback, 2) do
-        case apply(plugin_module, callback, [doc, []]) do
-          {:ok, updated_doc} -> {:cont, {:ok, updated_doc}}
-          {:error, _} = error -> {:halt, error}
-        end
-      else
-        {:cont, {:ok, doc}}
+  defp notify_plugins(editor, event, payload) do
+    if editor.plugins == [] do
+      {:ok, editor}
+    else
+      do_notify_plugins(editor, event, payload)
+    end
+  end
+
+  defp do_notify_plugins(editor, event, payload) do
+    Enum.reduce_while(editor.plugins, {:ok, editor}, fn plugin_module, {:ok, acc_editor} ->
+      case apply_plugin_hook(plugin_module, event, payload, acc_editor) do
+        {:ok, updated_editor} -> {:cont, {:ok, updated_editor}}
+        {:error, _} = error -> {:halt, error}
       end
     end)
+  end
+
+  defp apply_plugin_hook(plugin, event, payload, editor) do
+    if function_exported?(plugin, :on_event, 3) do
+      plugin.on_event(event, payload, editor)
+    else
+      {:ok, editor}
+    end
   end
 end
