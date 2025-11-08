@@ -31,20 +31,9 @@ const csrfToken = document
 // EditorSync hook for shadow textarea synchronization
 const Hooks = {};
 
-Hooks.EditorSync = {
-  mounted() {
-    // Sync scroll between textarea and overlay
-    this.el.addEventListener("scroll", (e) => {
-      const overlay = this.el.parentElement.querySelector(
-        ".pointer-events-none",
-      );
-      if (overlay) {
-        overlay.scrollTop = e.target.scrollTop;
-        overlay.scrollLeft = e.target.scrollLeft;
-      }
-    });
-  },
-};
+import EditorSync from "./hooks/editor_sync.js";
+
+Hooks.EditorSync = EditorSync;
 
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
