@@ -2,7 +2,7 @@ defmodule ExEditor.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/yourusername/ex_editor"
+  @source_url "https://github.com/thanos/ex_editor"
 
   def project do
     [
@@ -52,7 +52,9 @@ defmodule ExEditor.MixProject do
   defp package do
     [
       licenses: ["MIT"],
-      links: %{"GitHub" => @source_url}
+      links: %{"GitHub" => @source_url},
+      maintainers: ["Thanos Vassilakis"]
+
     ]
   end
 
