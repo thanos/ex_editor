@@ -34,6 +34,7 @@ defmodule ExEditor.MixProject do
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false}
+      {:excoveralls, "~> 0.18", only: :test}
     ]
   end
 
