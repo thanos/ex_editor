@@ -50,7 +50,9 @@ State Layer (LiveView)
 
 ## Screenshot
 
-A screenshot will be added here showing the editor interface with side-by-side layout.
+![ExEditor Screenshot](priv/static/images/screenshot.png)
+
+The screenshot shows the ExEditor interface with a side-by-side layout: the left panel contains an editable textarea with Elixir code, and the right panel displays the raw content in real-time.
 
 ## Installation
 
