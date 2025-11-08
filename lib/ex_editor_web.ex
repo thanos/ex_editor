@@ -83,7 +83,6 @@ defmodule ExEditorWeb do
       import ExEditorWeb.CoreComponents
 
       # Common modules used in templates
-      alias Phoenix.LiveView.JS
       alias ExEditorWeb.Layouts
 
       # Routes generation with the ~p sigil
