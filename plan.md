@@ -1,70 +1,39 @@
-# ExEditor - Headless Code Editor for Phoenix LiveView
+# ExEditor Reorganization Plan
 
-## Project Goal
-Build a **pure Elixir headless editor** inspired by Tiptap's architecture, but LiveView-native.
-First release: A LiveView component that transforms a textarea into a code editor with line numbering.
+Goal: Transform ExEditor into a reusable library with a separate demo Phoenix app (like Backpex structure)
 
-## Detailed Implementation Plan
+## Phase 1: Create Library Structure
+- [x] Move core modules to clean library structure
+  - Keep only: Document, Editor, Plugin system at root lib/ex_editor/
+  - Remove all Phoenix-specific code from library
+- [x] Create library mix.exs (no Phoenix deps)
+- [x] Create library-only README
 
-### Phase 1: Core Architecture (Steps 1-5)
-- [x] Clone reference repo and analyze
-- [x] Generate Phoenix project for development
-- [x] Create plan.md and start server
-- [x] Replace home page with static editor mockup
-- [x] Create core ExEditor modules:
-  - `ExEditor.Document` - Document state (lines, content)
-  - `ExEditor.Editor` - Main editor state management
-  - `ExEditor.Plugin` - Behaviour for plugins
+## Phase 2: Create Demo Phoenix App
+- [x] Generate new Phoenix app in demo/ directory
+- [x] Configure demo to use path dependency: `{:ex_editor, path: ".."}`
+- [x] Move EditorLive, templates, layouts to demo
+- [x] Move hooks (assets/js/hooks/) to demo
+- [x] Move CSS (assets/css/) to demo
 
-### Phase 2: LiveView Component (Steps 6-8)
-- [x] Create `ExEditor.LiveComponent`
-  - Shadow textarea for actual input
-  - Overlay div for rendered content
-  - Line numbering display
-  - Handle textarea events (input, keydown, scroll)
-  - Sync scroll position between textarea and overlay
+## Phase 3: Move Phoenix-Specific Files
+- [x] Move priv/ to demo/priv/
+- [x] Move test/ files appropriately (lib tests to root, Phoenix tests to demo)
+- [x] Move current config/ to demo/config/
+- [x] Update .formatter.exs for both projects
 
-### Phase 3: Line Numbering Plugin (Step 9)
-- [x] Create `ExEditor.Plugins.LineNumbers`
-  - Calculate line numbers from document
-  - Render line gutter
-  - Sync with content height
+## Phase 4: Fix Paths and Imports
+- [x] Update all module references in demo
+- [x] Update all import/alias statements
+- [x] Fix asset paths in demo layouts
+- [x] Ensure demo compiles cleanly
 
-### Phase 4: Demo & Integration (Steps 10-13)
-- [x] Create demo LiveView at `/editor`
-  - JSON editing example
-  - Real-time updates
-  - Show/hide line numbers toggle
-- [x] Match `app.css` to code editor theme
-- [x] Match `root.html.heex` to design (force dark theme)
-- [x] Match `<Layouts.app>` to design (minimal, code-focused)
+## Phase 5: Test and Document
+- [x] Start demo server and verify editor works
+- [ ] Update root README with library usage
+- [ ] Create demo/README with demo-specific instructions
+- [ ] Add hex package metadata to root mix.exs
+- [ ] Update CHANGELOG.md
 
-### Phase 5: Router & Testing (Steps 14-15)
-- [x] Update router to replace root route with `/editor`
-- [x] Visit and verify functionality
-
-### Reserved Steps
-- [x] All steps completed successfully!
-
-## Technical Architecture Notes
-
-### Shadow Textarea Approach
-```
-┌─────────────────────────────────┐
-│  <div class="ex-editor">        │
-│    <textarea> (hidden)          │ ← Actual input, accessibility
-│    <div class="overlay">        │ ← Rendered with line numbers
-│      <div class="gutter">1</div>│
-│      <div class="line">...</div>│
-│    </div>                        │
-└─────────────────────────────────┘
-```
-
-### Plugin System
-Plugins implement `ExEditor.Plugin` behaviour:
-- `c:render/2` - Render plugin UI
-- `c:handle_change/2` - React to document changes
-
-## Design Choice
-**VS Code dark theme** with monospace font, subtle line highlighting
+Reserved: 2 steps for debugging
 
