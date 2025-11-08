@@ -27,13 +27,15 @@ Goal: Transform ExEditor into a reusable library with a separate demo Phoenix ap
 - [x] Update all import/alias statements
 - [x] Fix asset paths in demo layouts
 - [x] Ensure demo compiles cleanly
+- [x] Fix CSS @source path to point to demo_web
+- [x] Fix demo layout to match screenshot (full-screen dark theme)
 
 ## Phase 5: Test and Document
 - [x] Start demo server and verify editor works
+- [x] Verify layout matches screenshot design
+- [ ] Fix cursor tracking bug in EditorLive
 - [ ] Update root README with library usage
 - [ ] Create demo/README with demo-specific instructions
 - [ ] Add hex package metadata to root mix.exs
 - [ ] Update CHANGELOG.md
-
-Reserved: 2 steps for debugging
 

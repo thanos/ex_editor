@@ -1,0 +1,50 @@
+@import "tailwindcss" source(none);
+@source "../css";
+@source "../js";
+@source "../../lib/demo_web";
+
+@plugin "../vendor/heroicons";
+@plugin "../vendor/daisyui" {
+  themes: false;
+}
+
+/* VS Code Dark Theme */
+@plugin "../vendor/daisyui-theme" {
+  name: "dark";
+  default: true;
+  prefersdark: true;
+  color-scheme: "dark";
+  --color-base-100: oklch(15% 0.01 252);
+  --color-base-200: oklch(12% 0.01 252);
+  --color-base-300: oklch(18% 0.01 252);
+  --color-base-content: oklch(83% 0.01 252);
+  --color-primary: oklch(58% 0.15 220);
+  --color-primary-content: oklch(98% 0 0);
+  --color-secondary: oklch(65% 0.12 160);
+  --color-accent: oklch(70% 0.15 30);
+  --color-neutral: oklch(25% 0.01 252);
+  --color-neutral-content: oklch(75% 0.01 252);
+  --color-info: oklch(60% 0.15 240);
+  --color-success: oklch(65% 0.15 145);
+  --color-warning: oklch(70% 0.15 60);
+  --color-error: oklch(60% 0.15 20);
+}
+
+/* Custom scrollbar for code editor */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4e4e4e;
+}
