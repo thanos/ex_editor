@@ -68,6 +68,10 @@ defmodule ExEditor.Editor do
       "new content"
   """
   @spec set_content(t(), String.t()) :: {:ok, t()} | {:error, term()}
+  def set_content(%__MODULE__{}, content) when not is_binary(content) do
+    {:error, :invalid_content}
+  end
+
   def set_content(%__MODULE__{} = editor, content) when is_binary(content) do
     document = Document.from_text(content)
     editor = %{editor | document: document}
