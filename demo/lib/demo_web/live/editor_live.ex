@@ -94,24 +94,4 @@ defmodule DemoWeb.EditorLive do
     </div>
     """
   end
-
-  # Private helpers
-
-  defp calculate_cursor_position(content, position) do
-    lines = String.split(content, "\n")
-
-    {line, col, _} =
-      Enum.reduce_while(lines, {1, 1, 0}, fn line_text, {current_line, _col, char_count} ->
-        line_length = String.length(line_text) + 1
-
-        if char_count + line_length > position do
-          col = position - char_count + 1
-          {:halt, {current_line, col, char_count}}
-        else
-          {:cont, {current_line + 1, 1, char_count + line_length}}
-        end
-      end)
-
-    {line, col}
-  end
 end
