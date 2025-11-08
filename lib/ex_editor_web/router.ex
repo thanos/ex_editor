@@ -17,7 +17,7 @@ defmodule ExEditorWeb.Router do
   scope "/", ExEditorWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", EditorLive
   end
 
   # Other scopes may use custom stacks.
