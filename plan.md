@@ -10,14 +10,14 @@ First release: A LiveView component that transforms a textarea into a code edito
 - [x] Clone reference repo and analyze
 - [x] Generate Phoenix project for development
 - [x] Create plan.md and start server
-- [ ] Replace home page with static editor mockup
-- [ ] Create core ExEditor modules:
+- [x] Replace home page with static editor mockup
+- [x] Create core ExEditor modules:
   - `ExEditor.Document` - Document state (lines, content)
   - `ExEditor.Editor` - Main editor state management
   - `ExEditor.Plugin` - Behaviour for plugins
 
 ### Phase 2: LiveView Component (Steps 6-8)
-- [ ] Create `ExEditor.LiveComponent`
+- [x] Create `ExEditor.LiveComponent`
   - Shadow textarea for actual input
   - Overlay div for rendered content
   - Line numbering display
@@ -25,26 +25,26 @@ First release: A LiveView component that transforms a textarea into a code edito
   - Sync scroll position between textarea and overlay
 
 ### Phase 3: Line Numbering Plugin (Step 9)
-- [ ] Create `ExEditor.Plugins.LineNumbers`
+- [x] Create `ExEditor.Plugins.LineNumbers`
   - Calculate line numbers from document
   - Render line gutter
   - Sync with content height
 
 ### Phase 4: Demo & Integration (Steps 10-13)
-- [ ] Create demo LiveView at `/editor`
+- [x] Create demo LiveView at `/editor`
   - JSON editing example
   - Real-time updates
   - Show/hide line numbers toggle
-- [ ] Match `app.css` to code editor theme
-- [ ] Match `root.html.heex` to design (force dark theme)
-- [ ] Match `<Layouts.app>` to design (minimal, code-focused)
+- [x] Match `app.css` to code editor theme
+- [x] Match `root.html.heex` to design (force dark theme)
+- [x] Match `<Layouts.app>` to design (minimal, code-focused)
 
 ### Phase 5: Router & Testing (Steps 14-15)
-- [ ] Update router to replace root route with `/editor`
-- [ ] Visit and verify functionality
+- [x] Update router to replace root route with `/editor`
+- [x] Visit and verify functionality
 
 ### Reserved Steps
-- 1 step reserved for unexpected issues
+- [x] All steps completed successfully!
 
 ## Technical Architecture Notes
 
