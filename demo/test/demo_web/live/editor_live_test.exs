@@ -122,6 +122,87 @@ defmodule DemoWeb.EditorLiveTest do
       html = render(view)
       assert html =~ "Ln 999, Col 50"
     end
+
+    test "handles selection_start and selection_end parameters from JS hook", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
+
+      # This is the bug fix test - the JS hook sends selection_start/selection_end
+      # instead of line/col, which was causing GenServer crashes
+      view
+      |> render_hook("update_cursor", %{
+        "selection_start" => 0,
+        "selection_end" => 0
+      })
+
+      # Should update cursor to line 1, col 1 for position 0
+      html = render(view)
+      assert html =~ "Ln 1, Col 1"
+    end
+
+    test "calculates correct cursor position from selection_start for multiline content", %{
+      conn: conn
+    } do
+      {:ok, view, _html} = live(conn, "/")
+
+      # Set multiline content first
+      content = "line 1\nline 2\nline 3"
+
+      view
+      |> element("form")
+      |> render_change(%{"content" => content})
+
+      # Position 7 should be start of line 2 (after "line 1\n")
+      view
+      |> render_hook("update_cursor", %{
+        "selection_start" => 7,
+        "selection_end" => 7
+      })
+
+      html = render(view)
+      assert html =~ "Ln 2, Col 1"
+    end
+
+    test "calculates correct cursor position mid-line", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
+
+      # Set content
+      content = "Hello World\nSecond Line"
+
+      view
+      |> element("form")
+      |> render_change(%{"content" => content})
+
+      # Position 6 should be in middle of "Hello World" (after "Hello ")
+      view
+      |> render_hook("update_cursor", %{
+        "selection_start" => 6,
+        "selection_end" => 6
+      })
+
+      html = render(view)
+      assert html =~ "Ln 1, Col 7"
+    end
+
+    test "does not crash with selection at end of content", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
+
+      content = "Short text"
+
+      view
+      |> element("form")
+      |> render_change(%{"content" => content})
+
+      # Position at end of content (length = 10)
+      view
+      |> render_hook("update_cursor", %{
+        "selection_start" => 10,
+        "selection_end" => 10
+      })
+
+      # Should not crash and should update cursor
+      html = render(view)
+      assert html =~ "Ln 1"
+    end
   end
 
   describe "render/1" do
