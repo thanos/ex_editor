@@ -30,7 +30,7 @@ end
 ```elixir
 def deps do
   [
-    {:ex_editor, github: "yourusername/ex_editor"}
+    {:ex_editor, github: "thanos/ex_editor"}
   ]
 end
 ```
