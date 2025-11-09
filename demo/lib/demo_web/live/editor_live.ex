@@ -56,6 +56,18 @@ defmodule DemoWeb.EditorLive do
   end
 
   @impl true
+  def handle_event("update_cursor", %{"selection_start" => pos, "selection_end" => _}, socket) do
+    # Calculate line and column from selection position
+    content = ExEditor.Editor.get_content(socket.assigns.editor)
+    {line, col} = calculate_cursor_position(content, pos)
+
+    {:noreply,
+     socket
+     |> assign(:cursor_line, line)
+     |> assign(:cursor_col, col)}
+  end
+
+  @impl true
   def render(assigns) do
     ~H"""
     <div class="min-h-screen bg-[#1e1e1e] text-[#d4d4d4]">
@@ -93,5 +105,24 @@ defmodule DemoWeb.EditorLive do
       </div>
     </div>
     """
+  end
+
+  defp calculate_cursor_position(content, position) do
+    # Split content into lines and calculate line/col from position
+    lines = String.split(content, "\n")
+
+    {line, col} =
+      Enum.reduce_while(lines, {0, position}, fn line_text, {line_num, remaining} ->
+        # +1 for newline
+        line_length = String.length(line_text) + 1
+
+        if remaining < line_length do
+          {:halt, {line_num + 1, remaining + 1}}
+        else
+          {:cont, {line_num + 1, remaining - line_length}}
+        end
+      end)
+
+    {line, col}
   end
 end
