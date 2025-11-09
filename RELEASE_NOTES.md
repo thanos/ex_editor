@@ -1,10 +1,10 @@
-# Release Notes - ExEditor v0.1.0
+# Release Notes - ExEditor v0.1.1
 
-**Release Date:** January 2025
+**Release Date:** Nov 9th 2025
 
 ## Overview
 
-ExEditor 0.1.0 is the initial release of a headless code editor library for Phoenix LiveView applications. This library provides a clean, extensible foundation for building custom code editing experiences in Elixir web applications.
+ExEditor 0.1.1 is a  production release of a headless code editor library for Phoenix LiveView applications. This library provides a clean, extensible foundation for building custom code editing experiences in Elixir web applications.
 
 ## Key Features
 
@@ -103,7 +103,7 @@ The library is distributed as a standard Elixir package:
 ```elixir
 def deps do
   [
-    {:ex_editor, "~> 0.1.0"}
+    {:ex_editor, "~> 0.1.1"}
   ]
 end
 ```

@@ -1,6 +1,6 @@
 # ExEditor
 
-A headless code editor library for Phoenix LiveView applications with a plugin system for extensibility.
+A headless code editor library for Phoenix LiveView applications with a plugin system for extensibility. This code is pre-production.
 
 ## Features
 
@@ -20,7 +20,7 @@ Add `ex_editor` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ex_editor, "~> 0.1.0"}
+    {:ex_editor, "~> 0.1.1"}
   ]
 end
 ```
