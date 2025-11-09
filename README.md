@@ -1,5 +1,12 @@
 # ExEditor
 
+
+[![Hex.pm](https://img.shields.io/hexpm/v/ex_editor.svg)](https://hex.pm/packages/ex_editor)
+[![Hex.pm](https://img.shields.io/hexpm/dt/ex_editor.svg)](https://hex.pm/packages/ex_editor)
+[![Hex.pm](https://img.shields.io/hexpm/l/ex_editor.svg)](https://hex.pm/packages/ex_editor)
+[![HexDocs.pm](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_editor)
+
+
 A headless code editor library for Phoenix LiveView applications with a plugin system for extensibility. This code is pre-production.
 
 ## Features
