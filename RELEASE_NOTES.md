@@ -1,6 +1,6 @@
 # Release Notes - ExEditor v0.1.0
 
-**Release Date:** January 2025
+**Release Date:** Nov 8th 2025
 
 ## Overview
 
