@@ -114,7 +114,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
       assert result =~ ~s(<span class="hl-operator">&lt;=</span>)
       assert result =~ ~s(<span class="hl-operator">&gt;=</span>)
       assert result =~ ~s(<span class="hl-operator">&lt;&gt;</span>)
-      assert result =~ ~s(<span class="hl-operator">::</span>)
+      assert result =~ ~s(<span class="hl-key">:</span><span class="hl-key">:</span>)
       assert result =~ ~s(<span class="hl-operator">-&gt;</span>)
       assert result =~ ~s(<span class="hl-operator">&lt;-</span>)
     end
@@ -195,7 +195,10 @@ defmodule ExEditor.Highlighters.ElixirTest do
       code = ~s(<div>)
       result = ElixirHL.highlight(code)
 
-      assert result =~ "&lt;div&gt;"
+      # <div> is correctly tokenized as separate tokens
+      assert result =~ ~s(<span class="hl-operator">&lt;</span>)
+      assert result =~ ~s(<span class="hl-variable">div</span>)
+      assert result =~ ~s(<span class="hl-operator">&gt;</span>)
       refute result =~ "<div>"
     end
   end
