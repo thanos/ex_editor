@@ -103,6 +103,10 @@
   color: #dcdcaa; /* Yellow for functions */
 }
 
+.hl-module {
+  color: #4ec9b0; /* Teal/cyan for module names */
+}
+
 .hl-variable {
   color: #9cdcfe; /* Light cyan for variables */
 }
