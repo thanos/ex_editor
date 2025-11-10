@@ -7,8 +7,8 @@ defmodule ExEditor.Editor do
 
   ## Example
 
-      iex> editor = ExEditor.Editor.new()
-      iex> editor = ExEditor.Editor.set_content(editor, "Hello\\nWorld")
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello\\nWorld")
       iex> ExEditor.Editor.get_content(editor)
       "Hello\\nWorld"
 
@@ -25,7 +25,7 @@ defmodule ExEditor.Editor do
         end
       end
 
-      editor = ExEditor.Editor.new(plugins: [MyPlugin])
+      {:ok, editor} = ExEditor.Editor.new(plugins: [MyPlugin])
 
   ## Syntax Highlighting
 
@@ -33,9 +33,9 @@ defmodule ExEditor.Editor do
 
       alias ExEditor.Highlighters.JSON
 
-      editor = ExEditor.Editor.new()
+      {:ok, editor} = ExEditor.Editor.new()
       editor = ExEditor.Editor.set_highlighter(editor, JSON)
-      editor = ExEditor.Editor.set_content(editor, ~s({"name": "John"}))
+      {:ok, editor} = ExEditor.Editor.set_content(editor, ~s({"name": "John"}))
 
       # Get highlighted HTML
       ExEditor.Editor.get_highlighted_content(editor)
@@ -43,40 +43,50 @@ defmodule ExEditor.Editor do
 
   alias ExEditor.Document
 
-  defstruct [:document, :plugins, :highlighter]
+  defstruct [:document, :plugins, :highlighter, :options]
 
   @type t :: %__MODULE__{
           document: Document.t(),
           plugins: list(module()),
-          highlighter: module() | nil
+          highlighter: module() | nil,
+          options: keyword()
         }
 
   @doc """
-  Creates a new editor with optional plugins.
+  Creates a new editor with optional plugins and content.
 
   ## Options
 
     * `:plugins` - List of plugin modules (default: `[]`)
+    * `:content` - Initial content string (default: `""`)
 
   ## Examples
 
-      iex> editor = ExEditor.Editor.new()
+      iex> {:ok, editor} = ExEditor.Editor.new()
       iex> is_struct(editor, ExEditor.Editor)
       true
 
-      iex> editor = ExEditor.Editor.new(plugins: [MyPlugin])
+      iex> {:ok, editor} = ExEditor.Editor.new(plugins: [MyPlugin])
       iex> editor.plugins
       [MyPlugin]
+
+      iex> {:ok, editor} = ExEditor.Editor.new(content: "Hello")
+      iex> ExEditor.Editor.get_content(editor)
+      "Hello"
   """
-  @spec new(keyword()) :: t()
+  @spec new(keyword()) :: {:ok, t()}
   def new(opts \\ []) do
     plugins = Keyword.get(opts, :plugins, [])
+    content = Keyword.get(opts, :content, "")
 
-    %__MODULE__{
-      document: Document.new(),
+    editor = %__MODULE__{
+      document: Document.from_text(content),
       plugins: plugins,
-      highlighter: nil
+      highlighter: nil,
+      options: []
     }
+
+    {:ok, editor}
   end
 
   @doc """
@@ -85,7 +95,7 @@ defmodule ExEditor.Editor do
   ## Examples
 
       iex> alias ExEditor.Highlighters.JSON
-      iex> editor = ExEditor.Editor.new()
+      iex> {:ok, editor} = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.set_highlighter(editor, JSON)
       iex> editor.highlighter
       ExEditor.Highlighters.JSON
@@ -98,21 +108,30 @@ defmodule ExEditor.Editor do
   @doc """
   Sets the content of the editor and notifies plugins.
 
+  Returns `{:ok, updated_editor}` on success or `{:error, reason}` on failure.
+
   ## Examples
 
-      iex> editor = ExEditor.Editor.new()
-      iex> editor = ExEditor.Editor.set_content(editor, "Hello\\nWorld")
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello\\nWorld")
       iex> ExEditor.Editor.get_content(editor)
       "Hello\\nWorld"
+
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> {:error, :invalid_content} = ExEditor.Editor.set_content(editor, nil)
   """
-  @spec set_content(t(), String.t()) :: t()
+  @spec set_content(t(), String.t()) :: {:ok, t()} | {:error, :invalid_content}
   def set_content(%__MODULE__{} = editor, content) when is_binary(content) do
     old_content = get_content(editor)
     new_document = Document.from_text(content)
 
     notify_plugins(editor.plugins, :on_content_changed, [old_content, content])
 
-    %{editor | document: new_document}
+    {:ok, %{editor | document: new_document}}
+  end
+
+  def set_content(%__MODULE__{}, _content) do
+    {:error, :invalid_content}
   end
 
   @doc """
@@ -120,8 +139,8 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> editor = ExEditor.Editor.new()
-      iex> editor = ExEditor.Editor.set_content(editor, "Test")
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "Test")
       iex> ExEditor.Editor.get_content(editor)
       "Test"
   """
@@ -138,9 +157,9 @@ defmodule ExEditor.Editor do
   ## Examples
 
       iex> alias ExEditor.Highlighters.JSON
-      iex> editor = ExEditor.Editor.new()
+      iex> {:ok, editor} = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.set_highlighter(editor, JSON)
-      iex> editor = ExEditor.Editor.set_content(editor, ~s({"name": "John"}))
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, ~s({"name": "John"}))
       iex> highlighted = ExEditor.Editor.get_highlighted_content(editor)
       iex> String.contains?(highlighted, "hl-key")
       true
