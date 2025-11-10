@@ -152,7 +152,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
     end
 
     test "highlights sigils" do
-      code = ~s(~s(hello) ~r/pattern/)
+      code = ~s[~s(hello) ~r/pattern/]
       result = Elixir.highlight(code)
 
       assert result =~ ~s(<span class="hl-string">~s(hello)</span>)
