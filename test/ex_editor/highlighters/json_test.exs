@@ -15,9 +15,9 @@ defmodule ExEditor.Highlighters.JSONTest do
       result = JSON.highlight(json)
 
       assert result =~ ~s(<span class="hl-punctuation">{</span>)
-      assert result =~ ~s(<span class="hl-key">"name"</span>)
+      assert result =~ ~s(<span class="hl-key">&quot;name&quot;</span>)
       assert result =~ ~s(<span class="hl-punctuation">:</span>)
-      assert result =~ ~s(<span class="hl-string">"John"</span>)
+      assert result =~ ~s(<span class="hl-string">&quot;John&quot;</span>)
       assert result =~ ~s(<span class="hl-punctuation">}</span>)
     end
 
@@ -25,8 +25,8 @@ defmodule ExEditor.Highlighters.JSONTest do
       json = ~s({"name": "John", "age": 30})
       result = JSON.highlight(json)
 
-      assert result =~ ~s(<span class="hl-key">"name"</span>)
-      assert result =~ ~s(<span class="hl-key">"age"</span>)
+      assert result =~ ~s(<span class="hl-key">&quot;name&quot;</span>)
+      assert result =~ ~s(<span class="hl-key">&quot;age&quot;</span>)
       assert result =~ ~s(<span class="hl-punctuation">,</span>)
     end
 
@@ -69,8 +69,8 @@ defmodule ExEditor.Highlighters.JSONTest do
       json = ~s({"user": {"name": "John"}})
       result = JSON.highlight(json)
 
-      assert result =~ ~s(<span class="hl-key">"user"</span>)
-      assert result =~ ~s(<span class="hl-key">"name"</span>)
+      assert result =~ ~s(<span class="hl-key">&quot;user&quot;</span>)
+      assert result =~ ~s(<span class="hl-key">&quot;name&quot;</span>)
     end
 
     test "escapes HTML characters in strings" do
@@ -85,7 +85,7 @@ defmodule ExEditor.Highlighters.JSONTest do
       json = ~s({"quote": "He said \\"hello\\""})
       result = JSON.highlight(json)
 
-      assert result =~ ~s(<span class="hl-string">"He said \\"hello\\""</span>)
+      assert result =~ ~s(<span class="hl-string">&quot;He said \&quot;hello\&quot;&quot;</span>)
     end
 
     test "preserves whitespace" do
@@ -105,9 +105,9 @@ defmodule ExEditor.Highlighters.JSONTest do
       json = ~s({"users": [{"name": "John", "active": true}, {"name": "Jane", "active": false}]})
       result = JSON.highlight(json)
 
-      assert result =~ ~s(<span class="hl-key">"users"</span>)
-      assert result =~ ~s(<span class="hl-string">"John"</span>)
-      assert result =~ ~s(<span class="hl-string">"Jane"</span>)
+      assert result =~ ~s(<span class="hl-key">&quot;users&quot;</span>)
+      assert result =~ ~s(<span class="hl-string">&quot;John&quot;</span>)
+      assert result =~ ~s(<span class="hl-string">&quot;Jane&quot;</span>)
       assert result =~ ~s(<span class="hl-boolean">true</span>)
       assert result =~ ~s(<span class="hl-boolean">false</span>)
     end
