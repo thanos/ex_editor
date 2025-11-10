@@ -107,29 +107,7 @@ defmodule ExEditor.Highlighters.Elixir do
     do_tokenize(remainder, [{:module, name} | acc])
   end
 
-  # Numbers (hex, octal, binary, float, integer)
-  defp do_tokenize(<<"0x", rest::binary>>, acc) do
-    {number, remainder} = extract_hex(rest, "0x")
-    do_tokenize(remainder, [{:number, number} | acc])
-  end
-
-  defp do_tokenize(<<"0o", rest::binary>>, acc) do
-    {number, remainder} = extract_octal(rest, "0o")
-    do_tokenize(remainder, [{:number, number} | acc])
-  end
-
-  defp do_tokenize(<<"0b", rest::binary>>, acc) do
-    {number, remainder} = extract_binary(rest, "0b")
-    do_tokenize(remainder, [{:number, number} | acc])
-  end
-
-  defp do_tokenize(<<char::utf8, rest::binary>>, acc)
-       when char in [?-, ?0, ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9] do
-    {number, remainder} = extract_number(<<char::utf8, rest::binary>>, "")
-    do_tokenize(remainder, [{:number, number} | acc])
-  end
-
-  # Multi-character operators
+  # Multi-character operators (moved up to take precedence over numbers and single-char ops)
   defp do_tokenize(<<"|>", rest::binary>>, acc) do
     do_tokenize(rest, [{:operator, "|>"} | acc])
   end
@@ -184,6 +162,28 @@ defmodule ExEditor.Highlighters.Elixir do
 
   defp do_tokenize(<<"\\\\", rest::binary>>, acc) do
     do_tokenize(rest, [{:operator, "\\\\"} | acc])
+  end
+
+  # Numbers (hex, octal, binary, float, integer)
+  defp do_tokenize(<<"0x", rest::binary>>, acc) do
+    {number, remainder} = extract_hex(rest, "0x")
+    do_tokenize(remainder, [{:number, number} | acc])
+  end
+
+  defp do_tokenize(<<"0o", rest::binary>>, acc) do
+    {number, remainder} = extract_octal(rest, "0o")
+    do_tokenize(remainder, [{:number, number} | acc])
+  end
+
+  defp do_tokenize(<<"0b", rest::binary>>, acc) do
+    {number, remainder} = extract_binary(rest, "0b")
+    do_tokenize(remainder, [{:number, number} | acc])
+  end
+
+  defp do_tokenize(<<char::utf8, rest::binary>>, acc)
+       when char in [?-, ?0, ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9] do
+    {number, remainder} = extract_number(<<char::utf8, rest::binary>>, "")
+    do_tokenize(remainder, [{:number, number} | acc])
   end
 
   # Single character operators and punctuation
@@ -355,7 +355,7 @@ defmodule ExEditor.Highlighters.Elixir do
   defp format_token({:string, value}),
     do: ~s(<span class="hl-string">#{escape_html(value)}</span>)
 
-  defp format_token({:module, value}), do: ~s(<span class="hl-variable">#{value}</span>)
+  defp format_token({:module, value}), do: ~s(<span class="hl-module">#{value}</span>)
 
   defp format_token({:comment, value}),
     do: ~s(<span class="hl-comment">#{escape_html(value)}</span>)
