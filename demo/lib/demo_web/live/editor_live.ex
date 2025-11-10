@@ -28,6 +28,7 @@ defmodule DemoWeb.EditorLive do
     """
 
     {:ok, editor} = ExEditor.Editor.new(content: initial_content)
+    editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
 
     {:ok,
      socket
