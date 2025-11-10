@@ -1,66 +1,126 @@
 defmodule DemoWeb.EditorLive do
   use DemoWeb, :live_view
+
+  alias ExEditor.Document
   alias ExEditor.Editor
   alias ExEditor.Highlighters.JSON
+  alias ExEditor.Highlighters.Elixir, as: ElixirHL
 
   @impl true
   def mount(_params, _session, socket) do
-    initial_content = ~s"""
+    # Default to JSON content and highlighter
+    json_content = """
     {
-      "name": "ExEditor",
-      "version": "0.1.1",
-      "description": "A headless code editor for Phoenix LiveView",
-      "features": [
-        "Real-time editing",
-        "Cursor tracking",
-        "Syntax highlighting",
-        "Plugin system"
-      ],
-      "config": {
-        "theme": "dark",
-        "tabSize": 2,
-        "lineNumbers": true
+      "name": "John Doe",
+      "age": 30,
+      "isStudent": false,
+      "courses": ["Math", "Science"],
+      "address": {
+        "street": "123 Main St",
+        "city": "Anytown"
       },
-      "keywords": ["elixir", "phoenix", "liveview", "editor"],
-      "license": "MIT",
-      "active": true,
-      "downloads": 1250,
-      "rating": 4.8
+      "grades": null
     }
     """
 
-    {:ok, editor} = Editor.new(content: String.trim(initial_content))
-    editor = Editor.set_highlighter(editor, JSON)
+    elixir_content = """
+    defmodule MyApp.User do
+      @moduledoc \"\"\"
+      User module for managing user accounts.
+      \"\"\"
 
-    {:ok,
-     socket
-     |> assign(:editor, editor)
-     |> assign(:content, Editor.get_content(editor))
-     |> assign(:highlighted_content, Editor.get_highlighted_content(editor))
-     |> assign(:cursor_line, 1)
-     |> assign(:cursor_col, 1)}
+      defstruct [:name, :email, :age]
+
+      def create(name, email) when is_binary(name) do
+        %__MODULE__{
+          name: name,
+          email: email,
+          age: nil
+        }
+      end
+
+      def update_age(%__MODULE__{} = user, age) when is_integer(age) do
+        %{user | age: age}
+      end
+
+      defp validate_email(email) do
+        String.contains?(email, "@")
+      end
+    end
+    """
+
+    {:ok, editor} = Editor.new()
+    editor = Editor.set_highlighter(editor, JSON)
+    {:ok, editor} = Editor.set_content(editor, String.trim(json_content))
+
+    socket =
+      assign(socket,
+        editor: editor,
+        line_count: Document.line_count(editor.document),
+        cursor_position: {0, 0},
+        selected_language: "json",
+        json_content: String.trim(json_content),
+        elixir_content: String.trim(elixir_content)
+      )
+
+    {:ok, socket}
   end
 
   @impl true
-  def handle_event("update_content", %{"content" => content}, socket) do
-    {:ok, editor} = Editor.set_content(socket.assigns.editor, content)
+  def handle_event("input-change", %{"value" => new_content}, socket) do
+    {:ok, updated_editor} = Editor.set_content(socket.assigns.editor, new_content)
 
-    {:noreply,
-     socket
-     |> assign(:editor, editor)
-     |> assign(:content, content)
-     |> assign(:highlighted_content, Editor.get_highlighted_content(editor))}
+    # Update the stored content for the selected language
+    socket =
+      case socket.assigns.selected_language do
+        "json" -> assign(socket, :json_content, new_content)
+        "elixir" -> assign(socket, :elixir_content, new_content)
+      end
+
+    socket =
+      assign(socket,
+        editor: updated_editor,
+        line_count: Document.line_count(updated_editor.document)
+      )
+
+    {:noreply, socket}
   end
 
   @impl true
   def handle_event("update_cursor", %{"selection_start" => pos, "selection_end" => _}, socket) do
-    content = socket.assigns.content
+    content = Editor.get_content(socket.assigns.editor)
     {line, col} = calculate_cursor_position(content, pos)
+    socket = assign(socket, cursor_position: {line, col})
+    {:noreply, socket}
+  end
 
-    {:noreply,
-     socket
-     |> assign(:cursor_line, line)
-     |> assign(:cursor_col, col)}
+  @impl true
+  def handle_event("change_language", %{"language" => language}, socket) do
+    # Get the content for the selected language
+    content =
+      case language do
+        "json" -> socket.assigns.json_content
+        "elixir" -> socket.assigns.elixir_content
+      end
+
+    # Set the appropriate highlighter
+    highlighter =
+      case language do
+        "json" -> JSON
+        "elixir" -> ElixirHL
+      end
+
+    editor = Editor.set_highlighter(socket.assigns.editor, highlighter)
+    {:ok, editor} = Editor.set_content(editor, content)
+
+    socket =
+      assign(socket,
+        editor: editor,
+        selected_language: language,
+        line_count: Document.line_count(editor.document)
+      )
+
+    {:noreply, socket}
   end
 
   defp calculate_cursor_position(content, position) do
@@ -83,42 +143,57 @@ defmodule DemoWeb.EditorLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-[#1e1e1e] text-[#d4d4d4] p-8">
-      <div class="max-w-7xl mx-auto">
-        <div class="mb-6">
-          <h1 class="text-3xl font-bold text-white mb-2">ExEditor Demo</h1>
-          <p class="text-[#858585]">
-            A headless code editor for Phoenix LiveView with JSON syntax highlighting
-          </p>
-        </div>
-
-        <div class="mb-4 flex items-center justify-between">
-          <div class="inline-block bg-[#007acc] text-white px-3 py-1 rounded text-sm font-mono">
-            Ln {@cursor_line}, Col {@cursor_col}
+    <Layouts.app flash={@flash}>
+      <div class="flex h-screen w-screen flex-col bg-base-100 text-base-content">
+        <header class="navbar bg-base-300">
+          <div class="flex-1">
+            <a href="/" class="btn btn-ghost text-xl">ExEditor Demo</a>
           </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div>
-            <h2 class="text-lg font-semibold mb-2 text-white">Editor</h2>
-            <textarea
-              id="editor-textarea"
-              phx-hook="EditorSync"
-              phx-change="update_content"
-              class="w-full h-[600px] bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm p-4 border border-[#3e3e3e] rounded focus:outline-none focus:border-[#007acc] resize-none"
-              spellcheck="false"
-            >{@content}</textarea>
+          <div class="flex-none gap-4">
+            <div class="form-control">
+              <select
+                class="select select-bordered"
+                phx-change="change_language"
+                name="language"
+              >
+                <option value="json" selected={@selected_language == "json"}>JSON</option>
+                <option value="elixir" selected={@selected_language == "elixir"}>Elixir</option>
+              </select>
+            </div>
+            <ul class="menu menu-horizontal px-1">
+              <li>
+                <a
+                  href="https://github.com/thanos/ex_editor"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  GitHub
+                </a>
+              </li>
+            </ul>
           </div>
+        </header>
 
-          <div>
-            <h2 class="text-lg font-semibold mb-2 text-white">Highlighted Output</h2>
-            <div class="w-full h-[600px] bg-[#1e1e1e] text-[#d4d4d4] font-mono text-sm p-4 border border-[#3e3e3e] rounded overflow-auto">
-              <pre class="whitespace-pre-wrap"><code>{Phoenix.HTML.raw(@highlighted_content)}</code></pre>
+        <main class="flex flex-1 overflow-hidden">
+          <div class="flex h-full w-full flex-col">
+            <div class="flex-1 overflow-auto p-4 font-mono text-sm">
+              <pre
+                id="editor"
+                class="relative h-full w-full whitespace-pre-wrap outline-none"
+                phx-update="ignore"
+                phx-hook="EditorSync"
+                data-content={Editor.get_content(@editor)}
+              ><%= raw Editor.get_highlighted_content(@editor) %></pre>
+            </div>
+            <div class="border-t border-base-200 bg-base-300 p-2 text-xs">
+              Line: {elem(@cursor_position, 0) + 1}, Column: {elem(@cursor_position, 1) + 1} | Lines: {@line_count} | Language: {String.upcase(
+                @selected_language
+              )}
             </div>
           </div>
-        </div>
+        </main>
       </div>
-    </div>
+    </Layouts.app>
     """
   end
 end
