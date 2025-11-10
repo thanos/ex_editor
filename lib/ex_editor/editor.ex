@@ -20,9 +20,13 @@ defmodule ExEditor.Editor do
         @behaviour ExEditor.Plugin
 
         @impl true
-        def on_content_changed(old_content, new_content) do
+        def on_event(:handle_change, {old_content, new_content}, editor) do
           IO.puts("Content changed from '\#{old_content}' to '\#{new_content}'")
+          {:ok, editor} # Plugins should return {:ok, editor}
         end
+
+        @impl true
+        def on_event(_event, _payload, editor), do: {:ok, editor}
       end
 
       {:ok, editor} = ExEditor.Editor.new(plugins: [MyPlugin])
@@ -125,7 +129,8 @@ defmodule ExEditor.Editor do
     old_content = get_content(editor)
     new_document = Document.from_text(content)
 
-    notify_plugins(editor.plugins, :handle_change, {old_content, content})
+    # Notify plugins about the content change
+    notify_plugins(editor, :handle_change, {old_content, content})
 
     {:ok, %{editor | document: new_document}}
   end
@@ -175,10 +180,10 @@ defmodule ExEditor.Editor do
   end
 
   # Notify all plugins of an event
-  defp notify_plugins(plugins, event, payload) do
-    Enum.each(plugins, fn plugin ->
-      if function_exported?(plugin, event, length(args)) do
-        apply(plugin, event, [payload, %{}])
+  defp notify_plugins(editor, event, payload) do
+    Enum.each(editor.plugins, fn plugin ->
+      if function_exported?(plugin, :on_event, 3) do
+        plugin.on_event(event, payload, editor)
       end
     end)
   end
