@@ -175,10 +175,10 @@ defmodule ExEditor.Editor do
   end
 
   # Notify all plugins of an event
-  defp notify_plugins(plugins, event, args) do
+  defp notify_plugins(plugins, event, payload) do
     Enum.each(plugins, fn plugin ->
       if function_exported?(plugin, event, length(args)) do
-        apply(plugin, event, args)
+        apply(plugin, event, [payload, %{}])
       end
     end)
   end
