@@ -96,11 +96,11 @@ defmodule DemoWeb.EditorLive do
           </div>
 
           <div>
-            <h2 class="text-lg font-semibold mb-2 text-white">Raw Content</h2>
+            <h2 class="text-lg font-semibold mb-2 text-white">Highlighted Content</h2>
             <pre
-              id="raw-content"
+              id="highlighted-content"
               class="font-mono text-sm w-full h-[600px] p-4 bg-[#252525] text-[#d4d4d4] border border-[#3e3e3e] rounded-lg overflow-auto"
-            ><%= ExEditor.Editor.get_content(@editor) %></pre>
+            ><%= raw ExEditor.Editor.get_highlighted_content(@editor) %></pre>
           </div>
         </div>
       </div>
