@@ -124,7 +124,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
       result = Elixir.highlight(code)
 
       assert result =~ ~s(<span class="hl-punctuation">(</span>)
-      assert result =~ ~s(<span class="hl-punctuation">)</span>)
+      assert result =~ ~s|<span class="hl-punctuation">)</span>|
       assert result =~ ~s(<span class="hl-punctuation">[</span>)
       assert result =~ ~s(<span class="hl-punctuation">]</span>)
       assert result =~ ~s(<span class="hl-punctuation">{</span>)
