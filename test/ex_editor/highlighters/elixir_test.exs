@@ -124,7 +124,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
       result = Elixir.highlight(code)
 
       assert result =~ ~s(<span class="hl-punctuation">(</span>)
-      assert result =~ ~s|<span class="hl-punctuation">)</span>| # Fixed line
+      assert result =~ ~s(<span class="hl-punctuation">)</span>)
       assert result =~ ~s(<span class="hl-punctuation">[</span>)
       assert result =~ ~s(<span class="hl-punctuation">]</span>)
       assert result =~ ~s(<span class="hl-punctuation">{</span>)
@@ -155,15 +155,16 @@ defmodule ExEditor.Highlighters.ElixirTest do
       code = ~s[~s(hello) ~r/pattern/]
       result = Elixir.highlight(code)
 
-      assert result =~ ~s(<span class="hl-string">~s(hello)</span>)
-      assert result =~ ~s(<span class="hl-string">~r/pattern/</span>)
+      # FIX: Changed ~s() delimiters to ~s|| to avoid conflict with nested ~s(hello)
+      assert result =~ ~s|<span class="hl-string">~s(hello)</span>|
+      assert result =~ ~s|<span class="hl-string">~r/pattern/</span>|
     end
 
     test "highlights complex code" do
       code = """
       defmodule MyApp.User do
         @moduledoc "User module"
-        
+
         def create(name, age) when is_binary(name) do
           %{name: name, age: age}
         end
