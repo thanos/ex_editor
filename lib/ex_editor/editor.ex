@@ -125,7 +125,7 @@ defmodule ExEditor.Editor do
     old_content = get_content(editor)
     new_document = Document.from_text(content)
 
-    notify_plugins(editor.plugins, :handle_change, [old_content, content])
+    notify_plugins(editor.plugins, :handle_change, {old_content, content})
 
     {:ok, %{editor | document: new_document}}
   end
