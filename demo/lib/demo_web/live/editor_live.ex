@@ -27,7 +27,7 @@ defmodule DemoWeb.EditorLive do
     end
     """
 
-    editor = ExEditor.Editor.new(content: initial_content)
+    {:ok, editor} = ExEditor.Editor.new(content: initial_content)
 
     {:ok,
      socket
