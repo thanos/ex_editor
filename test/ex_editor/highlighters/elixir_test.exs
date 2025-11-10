@@ -1,18 +1,18 @@
 defmodule ExEditor.Highlighters.ElixirTest do
   use ExUnit.Case, async: true
 
-  alias ExEditor.Highlighters.Elixir
+  alias ExEditor.Highlighters.Elixir, as: ElixirHL
 
   describe "name/0" do
     test "returns Elixir" do
-      assert Elixir.name() == "Elixir"
+      assert ElixirHL.name() == "Elixir"
     end
   end
 
   describe "highlight/1" do
     test "highlights simple function definition" do
       code = "def hello(name), do: name"
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-keyword">def</span>)
       assert result =~ ~s(<span class="hl-function">hello</span>)
@@ -22,7 +22,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
 
     test "highlights module definition" do
       code = "defmodule MyApp.User do\nend"
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-keyword">defmodule</span>)
       assert result =~ ~s(<span class="hl-module">MyApp.User</span>)
@@ -32,7 +32,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
 
     test "highlights atoms" do
       code = ":ok :error :atom_name"
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-key">:ok</span>)
       assert result =~ ~s(<span class="hl-key">:error</span>)
@@ -41,35 +41,35 @@ defmodule ExEditor.Highlighters.ElixirTest do
 
     test "highlights quoted atoms" do
       code = ~s(:"quoted atom")
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-key">:&quot;quoted atom&quot;</span>)
     end
 
     test "highlights double quoted strings" do
       code = ~s("hello world")
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-string">&quot;hello world&quot;</span>)
     end
 
     test "highlights single quoted strings" do
       code = ~s('hello')
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-string">&#39;hello&#39;</span>)
     end
 
     test "highlights escaped characters in strings" do
       code = ~s("hello \\"world\\"")
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-string">&quot;hello \\&quot;world\\&quot;&quot;</span>)
     end
 
     test "highlights numbers" do
       code = "42 3.14 -5 0x1F 0o17 0b1010"
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-number">42</span>)
       assert result =~ ~s(<span class="hl-number">3.14</span>)
@@ -81,7 +81,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
 
     test "highlights booleans" do
       code = "true false"
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-boolean">true</span>)
       assert result =~ ~s(<span class="hl-boolean">false</span>)
@@ -89,21 +89,21 @@ defmodule ExEditor.Highlighters.ElixirTest do
 
     test "highlights nil" do
       code = "nil"
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-null">nil</span>)
     end
 
     test "highlights comments" do
       code = "# This is a comment\ncode"
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-comment"># This is a comment</span>)
     end
 
     test "highlights operators" do
       code = "|> ++ -- === == != <= >= <> :: -> <-"
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-operator">|&gt;</span>)
       assert result =~ ~s(<span class="hl-operator">++</span>)
@@ -121,7 +121,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
 
     test "highlights punctuation" do
       code = "( ) [ ] { } , . ;"
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-punctuation">(</span>)
       assert result =~ ~s|<span class="hl-punctuation">)</span>|
@@ -135,7 +135,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
 
     test "highlights function calls" do
       code = "hello(world)"
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-function">hello</span>)
       assert result =~ ~s(<span class="hl-punctuation">(</span>)
@@ -144,7 +144,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
 
     test "highlights module attributes" do
       code = "@moduledoc @doc @spec"
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-variable">@moduledoc</span>)
       assert result =~ ~s(<span class="hl-variable">@doc</span>)
@@ -153,7 +153,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
 
     test "highlights sigils" do
       code = ~s[~s(hello) ~r/pattern/]
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       # FIX: Changed ~s() delimiters to ~s|| to avoid conflict with nested ~s(hello)
       assert result =~ ~s|<span class="hl-string">~s(hello)</span>|
@@ -171,7 +171,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
       end
       """
 
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ ~s(<span class="hl-keyword">defmodule</span>)
       assert result =~ ~s(<span class="hl-module">MyApp.User</span>)
@@ -185,7 +185,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
 
     test "preserves whitespace" do
       code = "def  hello\n  do"
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ "  "
       assert result =~ "\n"
@@ -193,7 +193,7 @@ defmodule ExEditor.Highlighters.ElixirTest do
 
     test "escapes HTML in code" do
       code = ~s(<div>)
-      result = Elixir.highlight(code)
+      result = ElixirHL.highlight(code)
 
       assert result =~ "&lt;div&gt;"
       refute result =~ "<div>"
