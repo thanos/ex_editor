@@ -85,7 +85,8 @@ defmodule ExEditor.Highlighters.JSONTest do
       json = ~s({"quote": "He said \\"hello\\""})
       result = JSON.highlight(json)
 
-      assert result =~ ~s(<span class="hl-string">&quot;He said \&quot;hello\&quot;&quot;</span>)
+      assert result =~
+               ~s(<span class="hl-string">&quot;He said \\&quot;hello\\&quot;&quot;</span>)
     end
 
     test "preserves whitespace" do
