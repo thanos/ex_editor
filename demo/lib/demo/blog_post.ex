@@ -23,6 +23,11 @@ defmodule Demo.BlogPost do
     |> maybe_generate_slug()
   end
 
+  @doc false
+  def changeset(blog_post, attrs, _metadata) do
+    changeset(blog_post, attrs)
+  end
+
   defp maybe_generate_slug(changeset) do
     case get_change(changeset, :slug) do
       nil ->
