@@ -8,9 +8,8 @@ defmodule DemoWeb.Admin.BlogPostLive do
       create_changeset: &Demo.BlogPost.changeset/2
     ],
     pubsub: [
-      name: Demo.PubSub,
-      topic: "blog_posts",
-      event_prefix: "blog_post_"
+      server: Demo.PubSub,
+      topic: "blog_posts"
     ]
 
   @impl Backpex.LiveResource
