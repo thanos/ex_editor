@@ -23,10 +23,9 @@ defmodule DemoWeb.Router do
   scope "/admin", DemoWeb.Admin, as: :admin do
     pipe_through :browser
 
-    live "/blog_posts", BlogPostLive, :index
-    live "/blog_posts/new", BlogPostLive, :new
-    live "/blog_posts/:id/edit", BlogPostLive, :edit
-    live "/blog_posts/:id/show", BlogPostLive, :show
+    live_session :backpex, layout: {DemoWeb.Layouts, :admin} do
+      live "/blog_posts", BlogPostLive
+    end
   end
 
   # Other scopes may use custom stacks.
