@@ -1,5 +1,6 @@
 defmodule DemoWeb.Router do
   use DemoWeb, :router
+  import Backpex.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -23,8 +24,8 @@ defmodule DemoWeb.Router do
   scope "/admin", DemoWeb.Admin, as: :admin do
     pipe_through :browser
 
-    live_session :backpex, layout: {DemoWeb.Layouts, :admin} do
-      live "/blog_posts", BlogPostLive
+    live_session :backpex, on_mount: Backpex.InitAssigns, layout: {DemoWeb.Layouts, :admin} do
+      live_resources("/blog_posts", BlogPostLive)
     end
   end
 
