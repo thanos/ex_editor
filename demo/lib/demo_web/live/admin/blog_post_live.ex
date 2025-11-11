@@ -7,7 +7,11 @@ defmodule DemoWeb.Admin.BlogPostLive do
       update_changeset: &Demo.BlogPost.changeset/2,
       create_changeset: &Demo.BlogPost.changeset/2
     ],
-    pubsub: Demo.PubSub
+    pubsub: [
+      name: Demo.PubSub,
+      topic: "blog_posts",
+      event_prefix: "blog_post_"
+    ]
 
   @impl Backpex.LiveResource
   def singular_name(), do: "Blog Post"
