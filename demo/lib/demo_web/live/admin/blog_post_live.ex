@@ -55,12 +55,12 @@ defmodule DemoWeb.Admin.BlogPostLive do
       inserted_at: %{
         module: Backpex.Fields.DateTime,
         label: "Created At",
-        can_edit: false
+        readonly: true
       },
       updated_at: %{
         module: Backpex.Fields.DateTime,
         label: "Updated At",
-        can_edit: false
+        readonly: true
       }
     ]
   end
