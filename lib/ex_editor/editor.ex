@@ -1,130 +1,190 @@
 defmodule ExEditor.Editor do
   @moduledoc """
-  The main editor state manager.
+  Main editor state manager with plugin support.
 
-  Manages the document state and coordinates plugins to provide
-  a headless, extensible code editing experience.
+  The editor manages document state and coordinates with plugins
+  for features like syntax highlighting.
+
+  ## Example
+
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello\\nWorld")
+      iex> ExEditor.Editor.get_content(editor)
+      "Hello\\nWorld"
+
+  ## Plugins
+
+  The editor supports plugins that implement the `ExEditor.Plugin` behaviour:
+
+      defmodule MyPlugin do
+        @behaviour ExEditor.Plugin
+
+        @impl true
+        def on_event(:handle_change, {old_content, new_content}, editor) do
+          IO.puts("Content changed from '\#{old_content}' to '\#{new_content}'")
+          {:ok, editor} # Plugins should return {:ok, editor}
+        end
+
+        @impl true
+        def on_event(_event, _payload, editor), do: {:ok, editor}
+      end
+
+      {:ok, editor} = ExEditor.Editor.new(plugins: [MyPlugin])
+
+  ## Syntax Highlighting
+
+  Set a highlighter to enable syntax highlighting:
+
+      alias ExEditor.Highlighters.JSON
+
+      {:ok, editor} = ExEditor.Editor.new()
+      editor = ExEditor.Editor.set_highlighter(editor, JSON)
+      {:ok, editor} = ExEditor.Editor.set_content(editor, ~s({"name": "John"}))
+
+      # Get highlighted HTML
+      ExEditor.Editor.get_highlighted_content(editor)
   """
 
   alias ExEditor.Document
 
-  defstruct document: %Document{},
-            plugins: [],
-            options: []
+  defstruct [:document, :plugins, :highlighter, :options]
 
-  @type plugin_module :: module()
   @type t :: %__MODULE__{
           document: Document.t(),
-          plugins: [plugin_module()],
+          plugins: list(module()),
+          highlighter: module() | nil,
           options: keyword()
         }
 
   @doc """
-  Creates a new editor instance.
+  Creates a new editor with optional plugins and content.
 
   ## Options
 
-  - `:plugins` - List of plugin modules to enable
-  - `:content` - Initial text content for the document
+    * `:plugins` - List of plugin modules (default: `[]`)
+    * `:content` - Initial content string (default: `""`)
 
   ## Examples
 
-      iex> ExEditor.Editor.new()
-      %ExEditor.Editor{document: %ExEditor.Document{lines: [""]}, options: [], plugins: []}
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> is_struct(editor, ExEditor.Editor)
+      true
 
-      iex> ExEditor.Editor.new(content: "hello\\nworld")
-      %ExEditor.Editor{document: %ExEditor.Document{lines: ["hello", "world"]}, options: [content: "hello\\nworld"], plugins: []}
+      iex> {:ok, editor} = ExEditor.Editor.new(plugins: [MyPlugin])
+      iex> editor.plugins
+      [MyPlugin]
+
+      iex> {:ok, editor} = ExEditor.Editor.new(content: "Hello")
+      iex> ExEditor.Editor.get_content(editor)
+      "Hello"
   """
-  @spec new(keyword()) :: t()
+  @spec new(keyword()) :: {:ok, t()}
   def new(opts \\ []) do
-    content = Keyword.get(opts, :content, "")
     plugins = Keyword.get(opts, :plugins, [])
+    content = Keyword.get(opts, :content, "")
 
-    document =
-      if content == "" do
-        Document.new()
-      else
-        Document.from_text(content)
-      end
-
-    %__MODULE__{
-      document: document,
+    editor = %__MODULE__{
+      document: Document.from_text(content),
       plugins: plugins,
-      options: opts
+      highlighter: nil,
+      options: []
     }
+
+    {:ok, editor}
   end
 
   @doc """
-  Updates the editor with new text content.
-
-  This will parse the content into lines and notify all plugins
-  of the document change.
+  Sets the syntax highlighter for the editor.
 
   ## Examples
 
-      iex> editor = ExEditor.Editor.new()
-      iex> {:ok, updated} = ExEditor.Editor.set_content(editor, "new content")
-      iex> ExEditor.Document.to_text(updated.document)
-      "new content"
+      iex> alias ExEditor.Highlighters.JSON
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.set_highlighter(editor, JSON)
+      iex> editor.highlighter
+      ExEditor.Highlighters.JSON
   """
-  @spec set_content(t(), String.t()) :: {:ok, t()} | {:error, term()}
-  def set_content(%__MODULE__{}, content) when not is_binary(content) do
+  @spec set_highlighter(t(), module()) :: t()
+  def set_highlighter(%__MODULE__{} = editor, highlighter) do
+    %{editor | highlighter: highlighter}
+  end
+
+  @doc """
+  Sets the content of the editor and notifies plugins.
+
+  Returns `{:ok, updated_editor}` on success or `{:error, reason}` on failure.
+
+  ## Examples
+
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello\\nWorld")
+      iex> ExEditor.Editor.get_content(editor)
+      "Hello\\nWorld"
+
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> {:error, :invalid_content} = ExEditor.Editor.set_content(editor, nil)
+  """
+  @spec set_content(t(), String.t()) :: {:ok, t()} | {:error, :invalid_content}
+  def set_content(%__MODULE__{} = editor, content) when is_binary(content) do
+    old_content = get_content(editor)
+    new_document = Document.from_text(content)
+
+    # Notify plugins about the content change
+    notify_plugins(editor, :handle_change, {old_content, content})
+
+    {:ok, %{editor | document: new_document}}
+  end
+
+  def set_content(%__MODULE__{}, _content) do
     {:error, :invalid_content}
   end
 
-  def set_content(%__MODULE__{} = editor, content) when is_binary(content) do
-    document = Document.from_text(content)
-    editor = %{editor | document: document}
-
-    # Notify plugins of change
-    # Pass an empty payload
-    case notify_plugins(editor, :handle_change, %{}) do
-      {:ok, updated_editor} ->
-        {:ok, updated_editor}
-
-      {:error, _} = error ->
-        error
-    end
-  end
-
   @doc """
-  Gets the current text content from the editor.
+  Gets the plain text content of the editor.
 
   ## Examples
 
-      iex> editor = ExEditor.Editor.new(content: "hello\\nworld")
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "Test")
       iex> ExEditor.Editor.get_content(editor)
-      "hello\\nworld"
+      "Test"
   """
   @spec get_content(t()) :: String.t()
   def get_content(%__MODULE__{document: document}) do
     Document.to_text(document)
   end
 
-  # Private Functions
+  @doc """
+  Gets the syntax-highlighted HTML content if a highlighter is set.
 
-  defp notify_plugins(editor, event, payload) do
-    if editor.plugins == [] do
-      {:ok, editor}
-    else
-      do_notify_plugins(editor, event, payload)
-    end
+  Returns plain text if no highlighter is configured.
+
+  ## Examples
+
+      iex> alias ExEditor.Highlighters.JSON
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.set_highlighter(editor, JSON)
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, ~s({"name": "John"}))
+      iex> highlighted = ExEditor.Editor.get_highlighted_content(editor)
+      iex> String.contains?(highlighted, "hl-key")
+      true
+  """
+  @spec get_highlighted_content(t()) :: String.t()
+  def get_highlighted_content(%__MODULE__{highlighter: nil} = editor) do
+    get_content(editor)
   end
 
-  defp do_notify_plugins(editor, event, payload) do
-    Enum.reduce_while(editor.plugins, {:ok, editor}, fn plugin_module, {:ok, acc_editor} ->
-      case apply_plugin_hook(plugin_module, event, payload, acc_editor) do
-        {:ok, updated_editor} -> {:cont, {:ok, updated_editor}}
-        {:error, _} = error -> {:halt, error}
+  def get_highlighted_content(%__MODULE__{highlighter: highlighter} = editor) do
+    content = get_content(editor)
+    highlighter.highlight(content)
+  end
+
+  # Notify all plugins of an event
+  defp notify_plugins(editor, event, payload) do
+    Enum.each(editor.plugins, fn plugin ->
+      if function_exported?(plugin, :on_event, 3) do
+        plugin.on_event(event, payload, editor)
       end
     end)
-  end
-
-  defp apply_plugin_hook(plugin, event, payload, editor) do
-    if function_exported?(plugin, :on_event, 3) do
-      plugin.on_event(event, payload, editor)
-    else
-      {:ok, editor}
-    end
   end
 end
