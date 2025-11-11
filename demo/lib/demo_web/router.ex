@@ -20,6 +20,15 @@ defmodule DemoWeb.Router do
     live "/", EditorLive
   end
 
+  scope "/admin", DemoWeb.Admin, as: :admin do
+    pipe_through :browser
+
+    live "/blog_posts", BlogPostLive, :index
+    live "/blog_posts/new", BlogPostLive, :new
+    live "/blog_posts/:id/edit", BlogPostLive, :edit
+    live "/blog_posts/:id/show", BlogPostLive, :show
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", DemoWeb do
   #   pipe_through :api
