@@ -4,8 +4,8 @@ defmodule DemoWeb.Admin.BlogPostLive do
     adapter_config: [
       schema: Demo.BlogPost,
       repo: Demo.Repo,
-      update_changeset: &Demo.BlogPost.changeset/2,
-      create_changeset: &Demo.BlogPost.changeset/2
+      update_changeset: &Demo.BlogPost.changeset/3,
+      create_changeset: &Demo.BlogPost.changeset/3
     ],
     pubsub: [
       server: Demo.PubSub,
