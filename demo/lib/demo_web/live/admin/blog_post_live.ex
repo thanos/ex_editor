@@ -1,13 +1,13 @@
 defmodule DemoWeb.Admin.BlogPostLive do
   use Backpex.LiveResource,
     layout: {DemoWeb.Layouts, :admin},
-    schema: Demo.BlogPost,
-    repo: Demo.Repo,
-    update_changeset: &Demo.BlogPost.changeset/2,
-    create_changeset: &Demo.BlogPost.changeset/2,
-    pubsub: Demo.PubSub,
-    topic: "blog_posts",
-    event_prefix: "blog_post_"
+    adapter_config: [
+      schema: Demo.BlogPost,
+      repo: Demo.Repo,
+      update_changeset: &Demo.BlogPost.changeset/2,
+      create_changeset: &Demo.BlogPost.changeset/2
+    ],
+    pubsub: Demo.PubSub
 
   @impl Backpex.LiveResource
   def singular_name(), do: "Blog Post"
@@ -60,20 +60,5 @@ defmodule DemoWeb.Admin.BlogPostLive do
         can_edit: false
       }
     ]
-  end
-
-  @impl Backpex.LiveResource
-  def index_columns do
-    [:title, :slug, :status, :published_at, :inserted_at]
-  end
-
-  @impl Backpex.LiveResource
-  def show_columns do
-    [:title, :slug, :status, :excerpt, :content, :published_at, :inserted_at, :updated_at]
-  end
-
-  @impl Backpex.LiveResource
-  def form_columns do
-    [:title, :slug, :status, :excerpt, :content, :published_at]
   end
 end
