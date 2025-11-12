@@ -10,6 +10,8 @@ import Config
 # Configure ecto repos
 config :demo, ecto_repos: [Demo.Repo]
 
+config :backpex, :pubsub_server, Demo.PubSub
+
 # Configures the endpoint
 config :demo, DemoWeb.Endpoint,
   url: [host: "localhost"],

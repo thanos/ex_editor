@@ -42,7 +42,7 @@ defmodule Demo.MixProject do
       {:phoenix_html, "~> 4.3"},
       {:phoenix_live_reload, "~> 1.6", only: :dev},
       {:phoenix_live_view, "~> 1.1.17"},
-      {:backpex, "~> 0.10"},
+      {:backpex, "~> 0.16"},
       {:lazy_html, "~> 0.1.8", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.7"},
       {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
