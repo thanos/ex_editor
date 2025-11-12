@@ -74,7 +74,7 @@ defmodule DemoWeb.EditorLive do
     <div class="min-h-screen bg-[#1e1e1e] text-[#d4d4d4]">
       <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold mb-6 text-white">ExEditor Demo</h1>
-
+        <a href="/admin">Backpex Example</a>
         <div id="cursor-position" class="mb-4 flex items-center justify-between">
           <div class="text-sm text-gray-400">
             Ln {@cursor_line}, Col {@cursor_col}
