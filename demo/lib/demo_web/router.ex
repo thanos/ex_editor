@@ -1,5 +1,6 @@
 defmodule DemoWeb.Router do
   use DemoWeb, :router
+  import Backpex.Router
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -18,6 +19,17 @@ defmodule DemoWeb.Router do
     pipe_through :browser
 
     live "/", EditorLive
+  end
+
+  scope "/admin", DemoWeb.Admin, as: :admin do
+    pipe_through :browser
+    backpex_routes()
+
+      get "/", RedirectController, :redirect_to_snippets
+
+    live_session :backpex, on_mount: Backpex.InitAssigns do
+          live_resources "/code_snippets", CodeSnippetLive
+    end
   end
 
   # Other scopes may use custom stacks.

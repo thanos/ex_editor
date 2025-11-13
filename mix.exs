@@ -54,7 +54,6 @@ defmodule ExEditor.MixProject do
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
       maintainers: ["Thanos Vassilakis"]
-
     ]
   end
 

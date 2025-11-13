@@ -3,110 +3,113 @@
 @source "../js";
 @source "../../lib/demo_web";
 
+@source "../../deps/backpex/**/*.*ex";
+@source "../../deps/backpex/assets/js/**/*.*js";
+
 @plugin "../vendor/heroicons";
 @plugin "../vendor/daisyui" {
-  themes: false;
+    themes: false;
 }
 
 @plugin "../vendor/daisyui-theme" {
-  name: "dark";
-  default: true;
-  prefersdark: true;
-  color-scheme: "dark";
-  --color-base-100: oklch(30.33% 0.016 252.42);
-  --color-primary: oklch(58% 0.233 277.117);
-  --color-secondary: oklch(69.71% 0.329 342.55);
-  --color-accent: oklch(76.76% 0.184 183.61);
-  --color-neutral: oklch(40.39% 0.049 257.22);
-  --color-info: oklch(67% 0.162 240);
-  --color-success: oklch(65% 0.18 150);
-  --color-warning: oklch(80% 0.15 60);
-  --color-error: oklch(62% 0.257 29.234);
-  --rounded-box: 1rem;
-  --rounded-btn: 0.5rem;
-  --rounded-badge: 1.9rem;
-  --animation-btn: 0.25s;
-  --animation-input: 0.2s;
-  --btn-focus-scale: 0.95;
-  --border-btn: 1px;
-  --tab-border: 1px;
-  --tab-radius: 0.5rem;
+    name: "dark";
+    default: true;
+    prefersdark: true;
+    color-scheme: "dark";
+    --color-base-100: oklch(30.33% 0.016 252.42);
+    --color-primary: oklch(58% 0.233 277.117);
+    --color-secondary: oklch(69.71% 0.329 342.55);
+    --color-accent: oklch(76.76% 0.184 183.61);
+    --color-neutral: oklch(40.39% 0.049 257.22);
+    --color-info: oklch(67% 0.162 240);
+    --color-success: oklch(65% 0.18 150);
+    --color-warning: oklch(80% 0.15 60);
+    --color-error: oklch(62% 0.257 29.234);
+    --rounded-box: 1rem;
+    --rounded-btn: 0.5rem;
+    --rounded-badge: 1.9rem;
+    --animation-btn: 0.25s;
+    --animation-input: 0.2s;
+    --btn-focus-scale: 0.95;
+    --border-btn: 1px;
+    --tab-border: 1px;
+    --tab-radius: 0.5rem;
 }
 
 @plugin "../vendor/daisyui-theme" {
-  name: "light";
-  default: false;
-  prefersdark: false;
-  color-scheme: "light";
-  --color-base-100: oklch(98% 0 0);
-  --color-primary: oklch(70% 0.213 47.604);
-  --color-secondary: oklch(69.71% 0.329 342.55);
-  --color-accent: oklch(76.76% 0.184 183.61);
-  --color-neutral: oklch(23.04% 0.065 285.75);
-  --color-info: oklch(67% 0.162 240);
-  --color-success: oklch(65% 0.18 150);
-  --color-warning: oklch(80% 0.15 60);
-  --color-error: oklch(62% 0.257 29.234);
-  --rounded-box: 1rem;
-  --rounded-btn: 0.5rem;
-  --rounded-badge: 1.9rem;
-  --animation-btn: 0.25s;
-  --animation-input: 0.2s;
-  --btn-focus-scale: 0.95;
-  --border-btn: 1px;
-  --tab-border: 1px;
-  --tab-radius: 0.5rem;
+    name: "light";
+    default: false;
+    prefersdark: false;
+    color-scheme: "light";
+    --color-base-100: oklch(98% 0 0);
+    --color-primary: oklch(70% 0.213 47.604);
+    --color-secondary: oklch(69.71% 0.329 342.55);
+    --color-accent: oklch(76.76% 0.184 183.61);
+    --color-neutral: oklch(23.04% 0.065 285.75);
+    --color-info: oklch(67% 0.162 240);
+    --color-success: oklch(65% 0.18 150);
+    --color-warning: oklch(80% 0.15 60);
+    --color-error: oklch(62% 0.257 29.234);
+    --rounded-box: 1rem;
+    --rounded-btn: 0.5rem;
+    --rounded-badge: 1.9rem;
+    --animation-btn: 0.25s;
+    --animation-input: 0.2s;
+    --btn-focus-scale: 0.95;
+    --border-btn: 1px;
+    --tab-border: 1px;
+    --tab-radius: 0.5rem;
 }
 
 /* Syntax Highlighting Classes */
 /* VS Code Dark theme inspired colors */
 
 .hl-keyword {
-  color: #569cd6; /* Light blue for keywords */
-  font-weight: 600;
+    color: #569cd6; /* Light blue for keywords */
+    font-weight: 600;
 }
 
 .hl-string {
-  color: #ce9178; /* Orange/brown for strings */
+    color: #ce9178; /* Orange/brown for strings */
 }
 
 .hl-number {
-  color: #b5cea8; /* Light green for numbers */
+    color: #b5cea8; /* Light green for numbers */
 }
 
 .hl-boolean {
-  color: #569cd6; /* Light blue for booleans */
+    color: #569cd6; /* Light blue for booleans */
 }
 
 .hl-null {
-  color: #569cd6; /* Light blue for null */
+    color: #569cd6; /* Light blue for null */
 }
 
 .hl-key {
-  color: #9cdcfe; /* Light cyan for object keys */
+    color: #9cdcfe; /* Light cyan for object keys */
 }
 
 .hl-punctuation {
-  color: #d4d4d4; /* Light gray for brackets, braces, etc */
+    color: #d4d4d4; /* Light gray for brackets, braces, etc */
 }
 
 .hl-comment {
-  color: #6a9955; /* Green for comments */
-  font-style: italic;
+    color: #6a9955; /* Green for comments */
+    font-style: italic;
 }
 
 .hl-operator {
-  color: #d4d4d4; /* Light gray for operators */
+    color: #d4d4d4; /* Light gray for operators */
 }
 
 .hl-function {
-  color: #dcdcaa; /* Yellow for functions */
+    color: #dcdcaa; /* Yellow for functions */
 }
 
 .hl-module {
-  color: #4ec9b0; /* Teal/cyan for module names */
+    color: #4ec9b0; /* Teal/cyan for module names */
 }
 
 .hl-variable {
-  color: #9cdcfe; /* Light cyan for variables */
+    color: #9cdcfe; /* Light cyan for variables */
 }

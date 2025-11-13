@@ -27,6 +27,8 @@ defmodule DemoWeb.Layouts do
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
 
+  attr :fluid?, :boolean, default: true, doc: "if the content uses full width"
+  attr :current_url, :string, required: true, doc: "the current url"
   attr :current_scope, :map,
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
@@ -111,4 +113,6 @@ defmodule DemoWeb.Layouts do
     </div>
     """
   end
+
+  def admin(assigns)
 end
