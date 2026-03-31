@@ -27,7 +27,7 @@ Add `ex_editor` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ex_editor, "~> 0.1.1"}
+    {:ex_editor, "~> 0.2.0"}
   ]
 end
 ```
@@ -54,7 +54,7 @@ mix deps.get
 
 ```elixir
 # Create a new editor with initial content
-editor = ExEditor.Editor.new(content: "Hello, World!\nThis is line 2")
+{:ok, editor} = ExEditor.Editor.new(content: "Hello, World!\nThis is line 2")
 
 # Get the current content
 ExEditor.Editor.get_content(editor)
@@ -95,36 +95,59 @@ ExEditor.Document.to_text(doc)
 
 ### Using Plugins
 
-Create a plugin by implementing the `ExEditor.Plugin` behavior:
+Create a plugin by implementing the `ExEditor.Plugin` behaviour:
 
 ```elixir
-defmodule MyApp.EditorPlugins.AutoSave do
+defmodule MyApp.EditorPlugins.MaxLength do
   @behaviour ExEditor.Plugin
 
+  @max_length 10_000
+
   @impl true
-  def on_event(:handle_change, _payload, editor) do
-    # Auto-save logic here
-    IO.puts("Content changed, auto-saving...")
-    {:ok, editor}
+  def on_event(:before_change, {_old, new}, editor) do
+    if String.length(new) > @max_length do
+      {:error, :content_too_long}
+    else
+      {:ok, editor}
+    end
   end
 
-  def on_event(_event, _payload, editor) do
-    {:ok, editor}
-  end
+  @impl true
+  def on_event(_event, _payload, editor), do: {:ok, editor}
 end
 ```
 
-Then use it with your editor:
+Use it with your editor:
 
 ```elixir
 editor = ExEditor.Editor.new(
   content: "Initial content",
-  plugins: [MyApp.EditorPlugins.AutoSave]
+  plugins: [MyApp.EditorPlugins.MaxLength]
 )
 
-# When content changes, your plugin will be notified
-{:ok, editor} = ExEditor.Editor.set_content(editor, "Updated content")
-# Prints: "Content changed, auto-saving..."
+# This will succeed
+{:ok, editor} = ExEditor.Editor.set_content(editor, "Short text")
+
+# This will fail if content exceeds max length
+{:error, :content_too_long} = ExEditor.Editor.set_content(editor, long_content)
+```
+
+### Plugin Events
+
+| Event | Payload | Purpose |
+|-------|---------|---------|
+| `:before_change` | `{old_content, new_content}` | Validate/reject changes |
+| `:handle_change` | `{old_content, new_content}` | React to changes |
+| Custom | Any | Application-defined |
+
+### Plugin Metadata
+
+Plugins can store state in editor metadata:
+
+```elixir
+def on_event(:handle_change, {_old, new}, editor) do
+  {:ok, ExEditor.Editor.put_metadata(editor, :my_plugin, %{last_saved: new})}
+end
 ```
 
 ## Phoenix LiveView Integration
@@ -169,16 +192,17 @@ The `ExEditor.Editor` module manages editor state:
 
 ### Plugin System
 
-Plugins implement the `ExEditor.Plugin` behavior:
+Plugins implement the `ExEditor.Plugin` behaviour:
 
 ```elixir
-@callback on_event(event :: atom(), payload :: map(), editor :: Editor.t()) ::
+@callback on_event(event :: atom(), payload :: term(), editor :: Editor.t()) ::
   {:ok, Editor.t()} | {:error, term()}
 ```
 
 Plugins receive events for:
-- `:handle_change` - Content has changed
-- Custom events defined by your application
+- `:before_change` - Before content changes (can reject)
+- `:handle_change` - After content has changed
+- Custom events via `Editor.notify/3`
 
 ## API Documentation
 

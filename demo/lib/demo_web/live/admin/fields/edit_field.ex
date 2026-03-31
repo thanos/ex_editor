@@ -36,6 +36,11 @@ defmodule DemoWeb.Admin.Fields.EditField do
 
     @impl Backpex.Field
     def render_value(assigns) do
+      {:ok, editor} = ExEditor.Editor.new(content: assigns.value)
+      editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
+      assigns =
+        assigns
+        |> assign(:editor, editor)
       ~H"""
       <p
         class={[
@@ -43,12 +48,21 @@ defmodule DemoWeb.Admin.Fields.EditField do
           @live_action == :show && "overflow-x-auto whitespace-pre-wrap"
         ]}
         phx-no-format
-      ><%= HTML.pretty_value(@value) %></p>
+      ><%= raw ExEditor.Editor.get_highlighted_content(@editor) %></p>
       """
     end
 
     @impl Backpex.Field
     def render_form(assigns) do
+      {:ok, editor} = ExEditor.Editor.new(content: "")
+      editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
+      assigns =
+        assigns
+        |> assign(:editor, editor)
+        |> assign(:cursor_line, 1)
+        |> assign(:cursor_col, 1)
+
+
       assigns |> dbg()
       ~H"""
       <div>
@@ -67,7 +81,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
             phx-throttle={Backpex.Field.throttle(@field_options, assigns)}
             readonly={@readonly}
             disabled={@readonly}
-          />
+          ><%= ExEditor.Editor.get_content(@editor) %></BackpexForm.input>
         </Layout.field_container>
       </div>
       """
