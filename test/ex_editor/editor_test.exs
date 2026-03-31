@@ -9,6 +9,7 @@ defmodule ExEditor.EditorTest do
       assert %Editor{document: %Document{lines: [""]}} = editor
       assert editor.plugins == []
       assert editor.options == []
+      assert editor.metadata == %{}
     end
 
     test "creates a new editor with provided content" do
@@ -41,14 +42,12 @@ defmodule ExEditor.EditorTest do
     end
 
     test "notifies plugins of content change" do
-      # Set up test process to receive messages
       test_pid = self()
 
       defmodule MockPlugin do
         @behaviour ExEditor.Plugin
 
         def on_event(:handle_change, _payload, editor) do
-          # Send message to test process
           send(Process.get(:test_pid), {:plugin_event, :handle_change})
           {:ok, editor}
         end
@@ -56,13 +55,68 @@ defmodule ExEditor.EditorTest do
         def on_event(_event, _payload, editor), do: {:ok, editor}
       end
 
-      # Store test PID in process dictionary for MockPlugin to access
       Process.put(:test_pid, test_pid)
 
       {:ok, editor} = Editor.new(plugins: [MockPlugin], content: "initial")
       {:ok, _updated_editor} = Editor.set_content(editor, "changed content")
 
       assert_receive {:plugin_event, :handle_change}
+    end
+
+    test "before_change event can reject changes" do
+      defmodule RejectPlugin do
+        @behaviour ExEditor.Plugin
+
+        def on_event(:before_change, {_old, new}, editor) do
+          if String.contains?(new, "forbidden") do
+            {:error, :forbidden_word}
+          else
+            {:ok, editor}
+          end
+        end
+
+        def on_event(_event, _payload, editor), do: {:ok, editor}
+      end
+
+      {:ok, editor} = Editor.new(plugins: [RejectPlugin])
+
+      assert {:error, :forbidden_word} = Editor.set_content(editor, "forbidden content")
+      assert {:ok, _} = Editor.set_content(editor, "allowed content")
+    end
+
+    test "plugins can modify editor via metadata" do
+      defmodule MetaPlugin do
+        @behaviour ExEditor.Plugin
+
+        def on_event(:handle_change, {_old, new}, editor) do
+          {:ok, Editor.put_metadata(editor, :change_count, String.length(new))}
+        end
+
+        def on_event(_event, _payload, editor), do: {:ok, editor}
+      end
+
+      {:ok, editor} = Editor.new(plugins: [MetaPlugin])
+      {:ok, editor} = Editor.set_content(editor, "hello")
+
+      assert editor.metadata[:change_count] == 5
+    end
+
+    test "multiple plugins form middleware chain" do
+      defmodule CounterPlugin do
+        @behaviour ExEditor.Plugin
+
+        def on_event(:handle_change, _, editor) do
+          count = Map.get(editor.metadata, :count, 0)
+          {:ok, Editor.put_metadata(editor, :count, count + 1)}
+        end
+
+        def on_event(_event, _payload, editor), do: {:ok, editor}
+      end
+
+      {:ok, editor} = Editor.new(plugins: [CounterPlugin, CounterPlugin])
+      {:ok, editor} = Editor.set_content(editor, "test")
+
+      assert editor.metadata[:count] == 2
     end
   end
 
@@ -75,6 +129,59 @@ defmodule ExEditor.EditorTest do
     test "returns empty string for new editor" do
       {:ok, editor} = Editor.new()
       assert Editor.get_content(editor) == ""
+    end
+  end
+
+  describe "put_metadata/3" do
+    test "stores metadata in the editor" do
+      {:ok, editor} = Editor.new()
+      editor = Editor.put_metadata(editor, :my_plugin, %{state: :active})
+
+      assert editor.metadata[:my_plugin] == %{state: :active}
+    end
+
+    test "can store multiple metadata keys" do
+      {:ok, editor} = Editor.new()
+      editor = Editor.put_metadata(editor, :key1, "value1")
+      editor = Editor.put_metadata(editor, :key2, "value2")
+
+      assert editor.metadata[:key1] == "value1"
+      assert editor.metadata[:key2] == "value2"
+    end
+  end
+
+  describe "notify/3" do
+    test "notifies plugins of custom events" do
+      defmodule CustomPlugin do
+        @behaviour ExEditor.Plugin
+
+        def on_event(:custom, payload, editor) do
+          {:ok, Editor.put_metadata(editor, :custom, payload)}
+        end
+
+        def on_event(_event, _payload, editor), do: {:ok, editor}
+      end
+
+      {:ok, editor} = Editor.new(plugins: [CustomPlugin])
+      {:ok, editor} = Editor.notify(editor, :custom, %{data: "test"})
+
+      assert editor.metadata[:custom] == %{data: "test"}
+    end
+
+    test "returns error when plugin rejects event" do
+      defmodule RejectCustomPlugin do
+        @behaviour ExEditor.Plugin
+
+        def on_event(:reject_me, _payload, _editor) do
+          {:error, :rejected}
+        end
+
+        def on_event(_event, _payload, editor), do: {:ok, editor}
+      end
+
+      {:ok, editor} = Editor.new(plugins: [RejectCustomPlugin])
+
+      assert {:error, :rejected} = Editor.notify(editor, :reject_me, nil)
     end
   end
 end

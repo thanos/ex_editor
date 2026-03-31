@@ -2,52 +2,55 @@ defmodule ExEditor.Plugin do
   @moduledoc """
   Behaviour for ExEditor plugins.
 
-  Plugins extend the editor with additional functionality like:
-  - Line numbering
-  - Syntax highlighting
-  - Autocomplete
-  - Custom decorations
+  Plugins can respond to editor events and modify editor state.
+
+  ## Built-in Events
+
+  - `:before_change` - Before content changes (can reject)
+  - `:handle_change` - After content changes
 
   ## Example
 
-  Define a plugin by implementing this behaviour:
-
-      defmodule MyEditor.Plugins.MyPlugin do
+      defmodule MyApp.Plugins.MaxLength do
         @behaviour ExEditor.Plugin
 
+        @max_length 1000
+
         @impl true
-        def render(document, _opts) do
-          # Return HEEx template or HTML string
+        def on_event(:before_change, {_old, new}, editor) do
+          if String.length(new) > @max_length do
+            {:error, :content_too_long}
+          else
+            {:ok, editor}
+          end
         end
 
         @impl true
-        def handle_change(document, _opts) do
-          # React to document changes
-          {:ok, document}
+        def on_event(:handle_change, {old, new}, editor) do
+          {:ok, Editor.put_metadata(editor, :last_change, %{from: old, to: new})}
         end
+
+        @impl true
+        def on_event(_event, _payload, editor), do: {:ok, editor}
       end
   """
 
-  alias ExEditor.Document
+  alias ExEditor.Editor
 
   @doc """
-  Renders the plugin's UI contribution.
+  Handles an editor event.
 
-  Receives the current document and plugin-specific options.
-  Returns an HEEx template or HTML string to be rendered.
+  ## Parameters
+
+  - `event` - Event name (atom)
+  - `payload` - Event-specific data
+  - `editor` - Current editor state
+
+  ## Returns
+
+  - `{:ok, editor}` - Continue with (optionally modified) editor
+  - `{:error, reason}` - Halt event propagation
   """
-  @callback render(document :: Document.t(), opts :: keyword()) :: Phoenix.LiveView.Rendered.t()
-
-  @doc """
-  Handles document changes.
-
-  Called whenever the document changes, allowing plugins to:
-  - Update internal state
-  - Trigger side effects
-  - Transform the document
-
-  Returns `{:ok, document}` or `{:error, reason}`.
-  """
-  @callback handle_change(document :: Document.t(), opts :: keyword()) ::
-              {:ok, Document.t()} | {:error, term()}
+  @callback on_event(event :: atom(), payload :: term(), editor :: Editor.t()) ::
+              {:ok, Editor.t()} | {:error, term()}
 end
