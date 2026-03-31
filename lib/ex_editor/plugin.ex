@@ -7,12 +7,14 @@ defmodule ExEditor.Plugin do
   ## Built-in Events
 
   - `:before_change` - Before content changes (can reject)
-  - `:handle_change` - After content changes
+  - `:handle_change` - After content changes (reactive, errors ignored)
 
   ## Example
 
       defmodule MyApp.Plugins.MaxLength do
         @behaviour ExEditor.Plugin
+
+        alias ExEditor.Editor
 
         @max_length 1000
 

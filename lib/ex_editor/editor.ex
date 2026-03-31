@@ -118,7 +118,7 @@ defmodule ExEditor.Editor do
 
       iex> {:ok, editor} = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.put_metadata(editor, :my_plugin, %{state: :active})
-      iex> editor.metadata[:my_plugin]
+      iex> ExEditor.Editor.get_metadata(editor, :my_plugin)
       %{state: :active}
   """
   @spec put_metadata(t(), atom(), term()) :: t()
@@ -127,12 +127,50 @@ defmodule ExEditor.Editor do
   end
 
   @doc """
+  Gets metadata from the editor.
+
+  Returns `nil` if the key doesn't exist.
+
+  ## Examples
+
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> ExEditor.Editor.get_metadata(editor, :missing)
+      nil
+
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.put_metadata(editor, :key, "value")
+      iex> ExEditor.Editor.get_metadata(editor, :key)
+      "value"
+  """
+  @spec get_metadata(t(), atom()) :: term() | nil
+  def get_metadata(%__MODULE__{metadata: metadata}, key) do
+    Map.get(metadata, key)
+  end
+
+  @doc """
+  Clears a metadata key from the editor.
+
+  ## Examples
+
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.put_metadata(editor, :key, "value")
+      iex> editor = ExEditor.Editor.clear_metadata(editor, :key)
+      iex> ExEditor.Editor.get_metadata(editor, :key)
+      nil
+  """
+  @spec clear_metadata(t(), atom()) :: t()
+  def clear_metadata(%__MODULE__{metadata: metadata} = editor, key) do
+    %{editor | metadata: Map.delete(metadata, key)}
+  end
+
+  @doc """
   Sets the content of the editor and notifies plugins.
 
   Returns `{:ok, updated_editor}` on success or `{:error, reason}` on failure.
 
   Plugins receive `:before_change` and `:handle_change` events.
-  Plugins can reject changes by returning `{:error, reason}` from `:before_change`.
+  - `:before_change` - Called before the document is updated. Plugins can reject changes.
+  - `:handle_change` - Called after the document is updated. Plugins react to changes.
 
   ## Examples
 
@@ -151,7 +189,12 @@ defmodule ExEditor.Editor do
     with {:ok, editor} <- notify_plugins(editor, :before_change, {old_content, content}) do
       new_document = Document.from_text(content)
       editor = %{editor | document: new_document}
-      notify_plugins(editor, :handle_change, {old_content, content})
+      # :handle_change is reactive - always succeed after document is updated
+      # Plugin errors are ignored but editor state from last successful plugin is used
+      case notify_plugins(editor, :handle_change, {old_content, content}) do
+        {:ok, editor} -> {:ok, editor}
+        {:error, _reason} -> {:ok, editor}
+      end
     end
   end
 
