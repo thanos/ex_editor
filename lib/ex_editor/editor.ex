@@ -1,16 +1,16 @@
 defmodule ExEditor.Editor do
   @moduledoc """
-  Main editor state manager with plugin support.
+  Main editor state manager with plugin support, undo/redo history, and metadata.
 
   The editor manages document state and coordinates with plugins
-  for features like syntax highlighting.
+  for features like syntax highlighting, content validation, and change tracking.
 
   ## Example
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
-      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello\\nWorld")
-      iex> ExEditor.Editor.get_content(editor)
-      "Hello\\nWorld"
+      editor = ExEditor.Editor.new()
+      {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello\\nWorld")
+      ExEditor.Editor.get_content(editor)
+      # => "Hello\\nWorld"
 
   ## Plugins
 
@@ -29,7 +29,25 @@ defmodule ExEditor.Editor do
         def on_event(_event, _payload, editor), do: {:ok, editor}
       end
 
-      {:ok, editor} = ExEditor.Editor.new(plugins: [MyPlugin])
+      editor = ExEditor.Editor.new(plugins: [MyPlugin])
+
+  ## Undo/Redo
+
+  The editor maintains a bounded history of document snapshots for undo/redo:
+
+      editor = ExEditor.Editor.new(content: "first")
+      {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
+      {:ok, editor} = ExEditor.Editor.undo(editor)
+      ExEditor.Editor.get_content(editor)
+      # => "first"
+
+  ## Metadata
+
+  Plugins can store arbitrary state in the editor's metadata map:
+
+      editor = ExEditor.Editor.put_metadata(editor, :word_count, 42)
+      ExEditor.Editor.get_metadata(editor, :word_count)
+      # => 42
 
   ## Syntax Highlighting
 
@@ -37,7 +55,7 @@ defmodule ExEditor.Editor do
 
       alias ExEditor.Highlighters.JSON
 
-      {:ok, editor} = ExEditor.Editor.new()
+      editor = ExEditor.Editor.new()
       editor = ExEditor.Editor.set_highlighter(editor, JSON)
       {:ok, editor} = ExEditor.Editor.set_content(editor, ~s({"name": "John"}))
 
@@ -126,7 +144,7 @@ defmodule ExEditor.Editor do
   ## Examples
 
       iex> alias ExEditor.Highlighters.JSON
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.set_highlighter(editor, JSON)
       iex> editor.highlighter
       ExEditor.Highlighters.JSON
@@ -141,7 +159,7 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.put_metadata(editor, :my_plugin, %{state: :active})
       iex> ExEditor.Editor.get_metadata(editor, :my_plugin)
       %{state: :active}
@@ -158,11 +176,11 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> ExEditor.Editor.get_metadata(editor, :missing)
       nil
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.put_metadata(editor, :key, "value")
       iex> ExEditor.Editor.get_metadata(editor, :key)
       "value"
@@ -177,7 +195,7 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.put_metadata(editor, :key, "value")
       iex> editor = ExEditor.Editor.clear_metadata(editor, :key)
       iex> ExEditor.Editor.get_metadata(editor, :key)
@@ -199,12 +217,12 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello\\nWorld")
       iex> ExEditor.Editor.get_content(editor)
       "Hello\\nWorld"
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> {:error, :invalid_content} = ExEditor.Editor.set_content(editor, nil)
   """
   @spec set_content(t(), String.t()) :: {:ok, t()} | {:error, term()}
@@ -234,7 +252,7 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> {:ok, editor} = ExEditor.Editor.notify(editor, :save, %{path: "file.ex"})
       iex> editor.metadata
       %{}
@@ -251,7 +269,7 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "Test")
       iex> ExEditor.Editor.get_content(editor)
       "Test"
@@ -269,7 +287,7 @@ defmodule ExEditor.Editor do
   ## Examples
 
       iex> alias ExEditor.Highlighters.JSON
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.set_highlighter(editor, JSON)
       iex> {:ok, editor} = ExEditor.Editor.set_content(editor, ~s({"name": "John"}))
       iex> highlighted = ExEditor.Editor.get_highlighted_content(editor)
@@ -293,9 +311,12 @@ defmodule ExEditor.Editor do
 
   Returns `{:ok, editor}` with the previous content, or `{:error, :no_history}` if nothing to undo.
 
+  After restoring the previous document, plugins are notified with a `:handle_change` event
+  containing `{old_content, new_content}`. The search state is also cleared.
+
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new(content: "first")
+      iex> editor = ExEditor.Editor.new(content: "first")
       iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
       iex> {:ok, editor} = ExEditor.Editor.undo(editor)
       iex> ExEditor.Editor.get_content(editor)
@@ -324,9 +345,12 @@ defmodule ExEditor.Editor do
 
   Returns `{:ok, editor}` with the restored content, or `{:error, :no_redo}` if nothing to redo.
 
+  After restoring the document, plugins are notified with a `:handle_change` event
+  containing `{old_content, new_content}`. The search state is also cleared.
+
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new(content: "first")
+      iex> editor = ExEditor.Editor.new(content: "first")
       iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
       iex> {:ok, editor} = ExEditor.Editor.undo(editor)
       iex> {:ok, editor} = ExEditor.Editor.redo(editor)
@@ -356,11 +380,11 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> ExEditor.Editor.can_undo?(editor)
       false
 
-      iex> {:ok, editor} = ExEditor.Editor.new(content: "first")
+      iex> editor = ExEditor.Editor.new(content: "first")
       iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
       iex> ExEditor.Editor.can_undo?(editor)
       true
@@ -373,7 +397,7 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> ExEditor.Editor.can_redo?(editor)
       false
   """

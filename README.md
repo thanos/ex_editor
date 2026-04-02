@@ -16,7 +16,7 @@ A headless code editor library for Phoenix LiveView applications with a plugin s
 - **Plugin System** - Extend functionality through a simple behavior-based plugin API
 - **LiveView Ready** - Designed for real-time collaborative editing
 - **Battle-Tested** - 95%+ test coverage with comprehensive unit tests
-- **Zero Dependencies** - Pure Elixir library with no external deps
+- **Zero Runtime Dependencies** - Pure Elixir library with no external runtime deps
 
 ## Installation
 
@@ -54,7 +54,7 @@ mix deps.get
 
 ```elixir
 # Create a new editor with initial content
-{:ok, editor} = ExEditor.Editor.new(content: "Hello, World!\nThis is line 2")
+editor = ExEditor.Editor.new(content: "Hello, World!\nThis is line 2")
 
 # Get the current content
 ExEditor.Editor.get_content(editor)
