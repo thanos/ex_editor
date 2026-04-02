@@ -1,19 +1,21 @@
 # ExEditor
 
-
 [![Hex.pm](https://img.shields.io/hexpm/v/ex_editor.svg)](https://hex.pm/packages/ex_editor)
 [![Hex.pm](https://img.shields.io/hexpm/dt/ex_editor.svg)](https://hex.pm/packages/ex_editor)
 [![Hex.pm](https://img.shields.io/hexpm/l/ex_editor.svg)](https://hex.pm/packages/ex_editor)
 [![HexDocs.pm](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/ex_editor)
 
+A headless code editor library for Phoenix LiveView applications with a plugin system for extensibility.
 
-A headless code editor library for Phoenix LiveView applications with a plugin system for extensibility. This code is pre-production.
+**[Live Demo](https://ex-editor.fly.dev)**
 
 ## Features
 
 - **Headless Architecture** - Core editing logic separate from UI concerns
 - **Line-Based Document Model** - Efficient text manipulation with line operations
 - **Plugin System** - Extend functionality through a simple behavior-based plugin API
+- **Undo/Redo Support** - Built-in history management with configurable stack size
+- **Syntax Highlighting** - Optional highlighters for Elixir, JSON, and custom languages
 - **LiveView Ready** - Designed for real-time collaborative editing
 - **Battle-Tested** - 95%+ test coverage with comprehensive unit tests
 - **Zero Runtime Dependencies** - Pure Elixir library with no external runtime deps
@@ -154,13 +156,16 @@ end
 
 See the included demo application in `demo/` for a complete example of integrating ExEditor with Phoenix LiveView.
 
+**[Live Demo](https://ex-editor.fly.dev)**
+
 The demo showcases:
 - Real-time content synchronization
 - Cursor position tracking
 - VS Code-inspired dark theme
+- Elixir syntax highlighting
 - JavaScript hooks for advanced features
 
-To run the demo:
+To run the demo locally:
 
 ```bash
 cd demo
@@ -188,6 +193,7 @@ The `ExEditor.Editor` module manages editor state:
 - Wraps a `Document` with metadata
 - Coordinates plugin execution
 - Handles content changes and notifications
+- Provides undo/redo with configurable history size
 - Provides a simple API for UI integration
 
 ### Plugin System
@@ -204,9 +210,25 @@ Plugins receive events for:
 - `:handle_change` - After content has changed
 - Custom events via `Editor.notify/3`
 
+## Syntax Highlighting
+
+ExEditor includes optional syntax highlighters:
+
+- `ExEditor.Highlighters.Elixir` - Highlights Elixir code
+- `ExEditor.Highlighters.JSON` - Highlights JSON data
+
+```elixir
+editor = ExEditor.Editor.new(content: "def hello, do: :world")
+editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
+ExEditor.Editor.get_highlighted_content(editor)
+# => "<span class=\"hl-keyword\">def</span> ..."
+```
+
+Create custom highlighters by implementing the `highlight/1` callback.
+
 ## API Documentation
 
-Full API documentation is available on [HexDocs](https://hexdocs.pm/ex_editor) (when published).
+Full API documentation is available on [HexDocs](https://hexdocs.pm/ex_editor).
 
 You can also generate docs locally:
 
