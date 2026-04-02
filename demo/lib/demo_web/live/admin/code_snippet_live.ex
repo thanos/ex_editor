@@ -7,10 +7,12 @@ defmodule DemoWeb.Admin.CodeSnippetLive do
       create_changeset: &Demo.CMS.CodeSnippet.changeset/3,
       item_query: &__MODULE__.item_query/3
     ],
-    on_mount: {__MODULE__, :local_hook},
-    layout: {DemoWeb.Layouts, :admin}
+    on_mount: {__MODULE__, :local_hook}
 
   import Ecto.Query, only: [from: 2]
+
+  @impl Backpex.LiveResource
+  def layout(_assigns), do: {DemoWeb.Layouts, :admin}
 
   def on_mount(:local_hook, _params, _session, socket) do
     editor = ExEditor.Editor.new(content: "")
