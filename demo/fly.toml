@@ -1,18 +1,17 @@
-# fly.toml app configuration file generated for demo-muddy-river-958 on 2026-03-18T09:06:00Z
+# fly.toml - Production deployment config
 #
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
+# This file is used by GitHub Actions for production deployments.
+# For local testing, use: flyctl deploy --config demo/fly.toml --dockerfile Dockerfile
 
 app = 'ex-editor'
 primary_region = 'ewr'
 kill_signal = 'SIGTERM'
 
-[build]
-  dockerfile = "../Dockerfile"
-
 [env]
   PHX_HOST = 'ex-editor.fly.dev'
+  PHX_SERVER = 'true'
   PORT = '8080'
+  SECRET_KEY_BASE = 'UTE9PqZhkbmN1Lf6igbLV3VA3Qqpq/bK7/iSSaO8G4WTPEQ2SceqbtjhiptjmXH3'
 
 [http_service]
   internal_port = 8080

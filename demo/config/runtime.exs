@@ -12,25 +12,28 @@ import Config
 # If you use `mix release`, you need to explicitly enable the server
 # by passing the PHX_SERVER=true when you start it:
 #
-#     PHX_SERVER=true bin/ex_editor start
+#     PHX_SERVER=true bin/demo start
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
 if System.get_env("PHX_SERVER") do
-  config :ex_editor, ExEditorWeb.Endpoint, server: true
+  config :demo, DemoWeb.Endpoint, server: true
 end
 
 if config_env() == :prod do
-  database_path =
-    System.get_env("DATABASE_PATH") ||
-      raise """
-      environment variable DATABASE_PATH is missing.
-      For example: /etc/ex_editor/ex_editor.db
-      """
+  # Database is optional for demo purposes
+  database_path = System.get_env("DATABASE_PATH")
 
-  config :ex_editor, ExEditor.Repo,
-    database: database_path,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5")
+  if database_path do
+    config :demo, Demo.Repo,
+      database: database_path,
+      pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5")
+  else
+    # Use in-memory database for demo without persistent storage
+    config :demo, Demo.Repo,
+      database: ":memory:",
+      pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5")
+  end
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
@@ -47,9 +50,9 @@ if config_env() == :prod do
   host = System.get_env("PHX_HOST") || "example.com"
   port = String.to_integer(System.get_env("PORT") || "4000")
 
-  config :ex_editor, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+  config :demo, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
 
-  config :ex_editor, ExEditorWeb.Endpoint,
+  config :demo, DemoWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
     http: [
       # Enable IPv6 and bind on all interfaces.
@@ -60,38 +63,6 @@ if config_env() == :prod do
       port: port
     ],
     secret_key_base: secret_key_base
-
-  # ## SSL Support
-  #
-  # To get SSL working, you will need to add the `https` key
-  # to your endpoint configuration:
-  #
-  #     config :ex_editor, ExEditorWeb.Endpoint,
-  #       https: [
-  #         ...,
-  #         port: 443,
-  #         cipher_suite: :strong,
-  #         keyfile: System.get_env("SOME_APP_SSL_KEY_PATH"),
-  #         certfile: System.get_env("SOME_APP_SSL_CERT_PATH")
-  #       ]
-  #
-  # The `cipher_suite` is set to `:strong` to support only the
-  # latest and more secure SSL ciphers. This means old browsers
-  # and clients may not be supported. You can set it to
-  # `:compatible` for wider support.
-  #
-  # `:keyfile` and `:certfile` expect an absolute path to the key
-  # and cert in disk or a relative path inside priv, for example
-  # "priv/ssl/server.key". For all supported SSL configuration
-  # options, see https://hexdocs.pm/plug/Plug.SSL.html#configure/1
-  #
-  # We also recommend setting `force_ssl` in your config/prod.exs,
-  # ensuring no data is ever sent via http, always redirecting to https:
-  #
-  #     config :ex_editor, ExEditorWeb.Endpoint,
-  #       force_ssl: [hsts: true]
-  #
-  # Check `Plug.SSL` for all available options in `force_ssl`.
 
   # ## Configuring the mailer
   #
