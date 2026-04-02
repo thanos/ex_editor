@@ -46,14 +46,25 @@ defmodule ExEditor.Editor do
   """
 
   alias ExEditor.Document
+  alias ExEditor.History
 
-  defstruct [:document, :plugins, :highlighter, :options, metadata: %{}]
+  defstruct [
+    :document,
+    :plugins,
+    :highlighter,
+    :options,
+    metadata: %{},
+    history: History.new(),
+    search: nil
+  ]
 
   @type t :: %__MODULE__{
           document: Document.t(),
           plugins: list(module()),
           highlighter: module() | nil,
           metadata: map(),
+          history: History.t(),
+          search: map() | nil,
           options: keyword()
         }
 
@@ -89,6 +100,8 @@ defmodule ExEditor.Editor do
       plugins: plugins,
       highlighter: nil,
       metadata: %{},
+      history: History.new(),
+      search: nil,
       options: []
     }
 
@@ -188,9 +201,9 @@ defmodule ExEditor.Editor do
 
     with {:ok, editor} <- notify_plugins(editor, :before_change, {old_content, content}) do
       new_document = Document.from_text(content)
-      editor = %{editor | document: new_document}
-      # :handle_change is reactive - always succeed after document is updated
-      # Plugin errors are ignored but editor state from last successful plugin is used
+      history = History.push(editor.history, new_document)
+      editor = %{editor | document: new_document, history: history}
+
       case notify_plugins(editor, :handle_change, {old_content, content}) do
         {:ok, editor} -> {:ok, editor}
         {:error, _reason} -> {:ok, editor}
@@ -258,6 +271,106 @@ defmodule ExEditor.Editor do
     content = get_content(editor)
     highlighter.highlight(content)
   end
+
+  # Undo/Redo
+
+  @doc """
+  Undoes the last content change.
+
+  Returns `{:ok, editor}` with the previous content, or `{:error, :no_history}` if nothing to undo.
+
+  ## Examples
+
+      iex> {:ok, editor} = ExEditor.Editor.new(content: "first")
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "third")
+      iex> {:ok, editor} = ExEditor.Editor.undo(editor)
+      iex> ExEditor.Editor.get_content(editor)
+      "second"
+  """
+  @spec undo(t()) :: {:ok, t()} | {:error, :no_history}
+  def undo(%__MODULE__{history: history} = editor) do
+    case History.undo(history) do
+      {:ok, document, history} ->
+        editor = %{editor | document: document, history: history, search: nil}
+
+        # Notify plugins of the change
+        case notify_plugins(editor, :handle_change, {nil, get_content(editor)}) do
+          {:ok, editor} -> {:ok, editor}
+          {:error, _} -> {:ok, editor}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Redoes the last undone change.
+
+  Returns `{:ok, editor}` with the restored content, or `{:error, :no_redo}` if nothing to redo.
+
+  ## Examples
+
+      iex> {:ok, editor} = ExEditor.Editor.new(content: "first")
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "third")
+      iex> {:ok, editor} = ExEditor.Editor.undo(editor)
+      iex> {:ok, editor} = ExEditor.Editor.redo(editor)
+      iex> ExEditor.Editor.get_content(editor)
+      "third"
+  """
+  @spec redo(t()) :: {:ok, t()} | {:error, :no_redo}
+  def redo(%__MODULE__{history: history} = editor) do
+    case History.redo(history) do
+      {:ok, document, history} ->
+        editor = %{editor | document: document, history: history, search: nil}
+
+        # Notify plugins of the change
+        case notify_plugins(editor, :handle_change, {nil, get_content(editor)}) do
+          {:ok, editor} -> {:ok, editor}
+          {:error, _} -> {:ok, editor}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Checks if undo is available.
+
+  ## Examples
+
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> ExEditor.Editor.can_undo?(editor)
+      false
+
+      iex> {:ok, editor} = ExEditor.Editor.new(content: "first")
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
+      iex> ExEditor.Editor.can_undo?(editor)
+      false
+
+      iex> {:ok, editor} = ExEditor.Editor.new(content: "first")
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "third")
+      iex> ExEditor.Editor.can_undo?(editor)
+      true
+  """
+  @spec can_undo?(t()) :: boolean()
+  def can_undo?(%__MODULE__{history: history}), do: History.can_undo?(history)
+
+  @doc """
+  Checks if redo is available.
+
+  ## Examples
+
+      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> ExEditor.Editor.can_redo?(editor)
+      false
+  """
+  @spec can_redo?(t()) :: boolean()
+  def can_redo?(%__MODULE__{history: history}), do: History.can_redo?(history)
 
   defp notify_plugins(editor, event, payload) do
     Enum.reduce_while(editor.plugins, {:ok, editor}, fn plugin, {:ok, ed} ->

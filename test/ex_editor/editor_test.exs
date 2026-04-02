@@ -150,6 +150,108 @@ defmodule ExEditor.EditorTest do
       assert {:error, :rejected} = Editor.notify(editor, :reject_me, nil)
     end
   end
+
+  describe "undo/1" do
+    test "returns error when no history" do
+      {:ok, editor} = Editor.new()
+      assert {:error, :no_history} = Editor.undo(editor)
+    end
+
+    test "undoes to previous content after two changes" do
+      {:ok, editor} = Editor.new(content: "initial")
+      {:ok, editor} = Editor.set_content(editor, "second")
+
+      refute Editor.can_undo?(editor)
+      assert {:error, :no_history} = Editor.undo(editor)
+    end
+
+    test "undoes to previous content after multiple changes" do
+      {:ok, editor} = Editor.new(content: "first")
+      {:ok, editor} = Editor.set_content(editor, "second")
+      {:ok, editor} = Editor.set_content(editor, "third")
+
+      assert Editor.can_undo?(editor)
+      {:ok, editor} = Editor.undo(editor)
+      assert Editor.get_content(editor) == "second"
+    end
+
+    test "can undo multiple changes" do
+      {:ok, editor} = Editor.new(content: "1")
+      {:ok, editor} = Editor.set_content(editor, "2")
+      {:ok, editor} = Editor.set_content(editor, "3")
+      {:ok, editor} = Editor.set_content(editor, "4")
+
+      {:ok, editor} = Editor.undo(editor)
+      assert Editor.get_content(editor) == "3"
+
+      {:ok, editor} = Editor.undo(editor)
+      assert Editor.get_content(editor) == "2"
+
+      assert {:error, :no_history} = Editor.undo(editor)
+    end
+  end
+
+  describe "redo/1" do
+    test "returns error when no redo available" do
+      {:ok, editor} = Editor.new()
+      assert {:error, :no_redo} = Editor.redo(editor)
+    end
+
+    test "redoes undone change" do
+      {:ok, editor} = Editor.new(content: "first")
+      {:ok, editor} = Editor.set_content(editor, "second")
+      {:ok, editor} = Editor.set_content(editor, "third")
+      {:ok, editor} = Editor.undo(editor)
+      {:ok, editor} = Editor.redo(editor)
+
+      assert Editor.get_content(editor) == "third"
+    end
+
+    test "new change clears redo stack" do
+      {:ok, editor} = Editor.new(content: "first")
+      {:ok, editor} = Editor.set_content(editor, "second")
+      {:ok, editor} = Editor.set_content(editor, "third")
+      {:ok, editor} = Editor.undo(editor)
+      {:ok, editor} = Editor.set_content(editor, "fourth")
+
+      assert {:error, :no_redo} = Editor.redo(editor)
+    end
+  end
+
+  describe "can_undo?/1" do
+    test "returns false for new editor" do
+      {:ok, editor} = Editor.new()
+      refute Editor.can_undo?(editor)
+    end
+
+    test "returns false after single change" do
+      {:ok, editor} = Editor.new(content: "initial")
+      {:ok, editor} = Editor.set_content(editor, "changed")
+      refute Editor.can_undo?(editor)
+    end
+
+    test "returns true after multiple changes" do
+      {:ok, editor} = Editor.new(content: "first")
+      {:ok, editor} = Editor.set_content(editor, "second")
+      {:ok, editor} = Editor.set_content(editor, "third")
+      assert Editor.can_undo?(editor)
+    end
+  end
+
+  describe "can_redo?/1" do
+    test "returns false for new editor" do
+      {:ok, editor} = Editor.new()
+      refute Editor.can_redo?(editor)
+    end
+
+    test "returns true after undo" do
+      {:ok, editor} = Editor.new(content: "first")
+      {:ok, editor} = Editor.set_content(editor, "second")
+      {:ok, editor} = Editor.set_content(editor, "third")
+      {:ok, editor} = Editor.undo(editor)
+      assert Editor.can_redo?(editor)
+    end
+  end
 end
 
 defmodule TestPlugins.MyPlugin do
