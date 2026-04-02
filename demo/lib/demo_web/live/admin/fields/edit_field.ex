@@ -36,13 +36,6 @@ defmodule DemoWeb.Admin.Fields.EditField do
 
   @impl Backpex.Field
   def render_value(assigns) do
-    editor = ExEditor.Editor.new(content: assigns.value)
-    editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
-
-    assigns =
-      assigns
-      |> assign(:editor, editor)
-
     ~H"""
     <p
       class={[
@@ -50,23 +43,12 @@ defmodule DemoWeb.Admin.Fields.EditField do
         @live_action == :show && "overflow-x-auto whitespace-pre-wrap"
       ]}
       phx-no-format
-    ><%= raw ExEditor.Editor.get_highlighted_content(@editor) %></p>
+    ><%= raw highlight_code(@value) %></p>
     """
   end
 
   @impl Backpex.Field
   def render_form(assigns) do
-    editor = ExEditor.Editor.new(content: "")
-    editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
-
-    assigns =
-      assigns
-      |> assign(:editor, editor)
-      |> assign(:cursor_line, 1)
-      |> assign(:cursor_col, 1)
-
-    assigns |> dbg()
-
     ~H"""
     <div>
       <Layout.field_container>
@@ -84,11 +66,17 @@ defmodule DemoWeb.Admin.Fields.EditField do
           phx-throttle={Backpex.Field.throttle(@field_options, assigns)}
           readonly={@readonly}
           disabled={@readonly}
-        >
-          {ExEditor.Editor.get_content(@editor)}
-        </BackpexForm.input>
+        />
       </Layout.field_container>
     </div>
     """
+  end
+
+  defp highlight_code(nil), do: ""
+
+  defp highlight_code(content) do
+    editor = ExEditor.Editor.new(content: content)
+    editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
+    ExEditor.Editor.get_highlighted_content(editor)
   end
 end
