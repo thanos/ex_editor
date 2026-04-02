@@ -18,11 +18,18 @@ defmodule ExEditor.MixProject do
       name: "ExEditor",
       source_url: @source_url,
       test_coverage: [tool: ExCoveralls],
+      aliases: [
+        verify: &verify/1
+      ],
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.detail": :test,
         "coveralls.post": :test,
         "coveralls.html": :test
+      ],
+      dialyzer: [
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
+        plt_add_apps: [:mix, :ex_unit]
       ]
     ]
   end
@@ -41,7 +48,8 @@ defmodule ExEditor.MixProject do
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
-      {:excoveralls, "~> 0.18", only: :test}
+      {:excoveralls, "~> 0.18", only: :test},
+      {:dialyxir, "~> 1.4", only: :dev, runtime: false}
     ]
   end
 
@@ -66,5 +74,33 @@ defmodule ExEditor.MixProject do
         "guides/plugins.md"
       ]
     ]
+  end
+
+  defp verify(_) do
+    steps = [
+      {"compile --warnings-as-errors", :dev},
+      {"format --check-formatted", :dev},
+      {"credo --strict", :dev},
+      {"sobelow --config", :dev},
+      # {"dialyzer", :dev},
+      {"test --cover", :test},
+      {"docs --warnings-as-errors", :dev}
+    ]
+
+    Enum.each(steps, fn {task, env} ->
+      Mix.shell().info([:bright, "==> mix #{task}", :reset])
+
+      {_, exit_code} =
+        System.cmd("mix", String.split(task),
+          env: [{"MIX_ENV", to_string(env)}],
+          into: IO.stream()
+        )
+
+      if exit_code != 0 do
+        Mix.raise("mix #{task} failed (exit code #{exit_code})")
+      end
+    end)
+
+    Mix.shell().info([:green, :bright, "\nAll verification checks passed!", :reset])
   end
 end

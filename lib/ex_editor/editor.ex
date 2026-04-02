@@ -78,27 +78,29 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> is_struct(editor, ExEditor.Editor)
       true
 
-      iex> {:ok, editor} = ExEditor.Editor.new(plugins: [MyPlugin])
+      iex> editor = ExEditor.Editor.new(plugins: [MyPlugin])
       iex> editor.plugins
       [MyPlugin]
 
-      iex> {:ok, editor} = ExEditor.Editor.new(content: "Hello")
+      iex> editor = ExEditor.Editor.new(content: "Hello")
       iex> ExEditor.Editor.get_content(editor)
       "Hello"
   """
-  @spec new(keyword()) :: {:ok, t()}
+  @spec new(keyword()) :: t()
   def new(opts \\ []) do
     plugins = Keyword.get(opts, :plugins, [])
     content = Keyword.get(opts, :content, "")
 
+    validate_plugins!(plugins)
+
     document = Document.from_text(content)
     history = History.push(History.new(), document)
 
-    editor = %__MODULE__{
+    %__MODULE__{
       document: document,
       plugins: plugins,
       highlighter: nil,
@@ -107,8 +109,15 @@ defmodule ExEditor.Editor do
       search: nil,
       options: []
     }
+  end
 
-    {:ok, editor}
+  defp validate_plugins!(plugins) do
+    Enum.each(plugins, fn plugin ->
+      unless function_exported?(plugin, :on_event, 3) do
+        raise ArgumentError,
+              "plugin #{inspect(plugin)} must implement on_event/3 callback"
+      end
+    end)
   end
 
   @doc """
@@ -387,21 +396,13 @@ defmodule ExEditor.Editor do
   end
 
   defp notify_plugin(plugin, event, payload, editor) do
-    if function_exported?(plugin, :on_event, 3) do
-      case plugin.on_event(event, payload, editor) do
-        {:ok, updated_editor} -> {:cont, {:ok, updated_editor}}
-        {:error, reason} -> {:halt, {:error, reason}}
-      end
-    else
-      {:cont, {:ok, editor}}
+    case plugin.on_event(event, payload, editor) do
+      {:ok, updated_editor} -> {:cont, {:ok, updated_editor}}
+      {:error, reason} -> {:halt, {:error, reason}}
     end
   end
 
   defp notify_plugin_with_fallback(plugin, event, payload, editor) do
-    if function_exported?(plugin, :on_event, 3) do
-      plugin.on_event(event, payload, editor)
-    else
-      {:ok, editor}
-    end
+    plugin.on_event(event, payload, editor)
   end
 end
