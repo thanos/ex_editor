@@ -35,7 +35,7 @@ defmodule Demo.Application do
   end
 
   defp skip_migrations?() do
-    # By default, sqlite migrations are run when using a release
-    System.get_env("RELEASE_NAME") == nil
+    # Skip migrations if no database path is configured (e.g., demo deployment)
+    System.get_env("DATABASE_PATH") == nil or System.get_env("SKIP_MIGRATIONS") == "true"
   end
 end
