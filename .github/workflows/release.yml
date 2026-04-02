@@ -29,9 +29,12 @@ jobs:
       - name: Install dependencies
         run: mix deps.get
 
+      - name: Compile
+        run: mix compile
+
       - name: Verify version matches mix.exs
         run: |
-          MIX_VERSION=$(mix eval 'IO.puts(Mix.Project.config()[:version])')
+          MIX_VERSION="$(mix eval 'IO.puts(Mix.Project.config()[:version])' | tail -n 1 | tr -d '\r')"
           TAG_VERSION="${{ steps.version.outputs.version }}"
           if [ "$MIX_VERSION" != "$TAG_VERSION" ]; then
             echo "Version mismatch: mix.exs has $MIX_VERSION, tag is $TAG_VERSION"
