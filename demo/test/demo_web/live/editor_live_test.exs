@@ -26,7 +26,7 @@ defmodule DemoWeb.EditorLiveTest do
 
       # Check assigns are set correctly
       assert view |> element("textarea[name='content']") |> has_element?()
-      assert view |> element("#raw-content") |> has_element?()
+      assert view |> element("#editor-textarea") |> has_element?()
     end
   end
 
@@ -217,8 +217,8 @@ defmodule DemoWeb.EditorLiveTest do
       assert html =~ "name=\"content\""
       assert html =~ "phx-change=\"update_content\""
 
-      # Verify raw content display
-      assert html =~ "id=\"raw-content\""
+      # Verify editor textarea
+      assert html =~ "id=\"editor-textarea\""
     end
 
     test "applies dark theme styling", %{conn: conn} do
