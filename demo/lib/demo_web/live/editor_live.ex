@@ -27,7 +27,7 @@ defmodule DemoWeb.EditorLive do
     end
     """
 
-    {:ok, editor} = ExEditor.Editor.new(content: initial_content)
+    editor = ExEditor.Editor.new(content: initial_content)
     editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
 
     {:ok,
