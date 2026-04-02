@@ -43,7 +43,7 @@ jobs:
 
       - name: Verify CHANGELOG updated
         run: |
-          if ! grep -q "## ${{ steps.version.outputs.version }}" CHANGELOG.md; then
+          if ! grep -q "## \[${{ steps.version.outputs.version }}\]" CHANGELOG.md; then
             echo "CHANGELOG.md does not contain entry for version ${{ steps.version.outputs.version }}"
             exit 1
           fi
