@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.18"
+          otp-version: "27"
+
+      - name: Verify version matches mix.exs
+        run: |
+          MIX_VERSION=$(mix eval 'IO.puts(Mix.Project.config()[:version])')
+          TAG_VERSION="${{ steps.version.outputs.version }}"
+          if [ "$MIX_VERSION" != "$TAG_VERSION" ]; then
+            echo "Version mismatch: mix.exs has $MIX_VERSION, tag is $TAG_VERSION"
+            exit 1
+          fi
+
+      - name: Verify CHANGELOG updated
+        run: |
+          if ! grep -q "## ${{ steps.version.outputs.version }}" CHANGELOG.md; then
+            echo "CHANGELOG.md does not contain entry for version ${{ steps.version.outputs.version }}"
+            exit 1
+          fi
+
+  release:
+    name: Create GitHub Release
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+
+  publish_hex:
+    name: Publish to Hex.pm
+    needs: release
+    runs-on: ubuntu-latest
+    env:
+      MIX_ENV: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.18"
+          otp-version: "27"
+
+      - name: Cache deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-release-dev-${{ hashFiles('mix.lock') }}
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      - name: Compile
+        run: mix compile
+
+      - name: Validate Hex package
+        run: mix hex.audit
+
+      - name: Publish to Hex
+        run: mix hex.publish --yes
+        env:
+          HEX_API_KEY: ${{ secrets.HEX_API_KEY }}

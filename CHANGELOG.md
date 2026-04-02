@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-04-02
+
+### Added
+- Initial content is now pushed to history on editor creation, enabling undo to original content
+- Plugin validation in `new/1` - raises `ArgumentError` for invalid plugins
+- Comprehensive test coverage for undo/redo with plugins
+- Tests for `notify/3` with multiple plugins in chain
+- Tests for `History.push` with `max_size: 1` edge case
+- GitHub Actions CI workflow with matrix testing (Elixir 1.15-1.20, OTP 26-29)
+- GitHub Actions release workflow with version validation and Hex publishing
+- GitHub Actions Fly.io deployment workflow
+
+### Changed
+- `Editor.new/1` now returns a bare `%Editor{}` struct instead of `{:ok, editor}`
+- `can_undo?/1` requires at least two content states in history (cursor >= 2)
+- Improved undo/redo to properly capture old/new content for plugin notifications
+- Plugin errors during `:handle_change` now preserve intermediate plugin state
+- Removed defensive `function_exported?` checks in plugin notification (plugins validated at creation)
+- Updated all test plugins to use `@impl true` for callback functions
+
+### Fixed
+- `undo/1` and `redo/1` now pass correct `{old_content, new_content}` to plugins (was passing `nil` for old content)
+- Plugin state is now preserved when a plugin errors during `:handle_change` chain
+- Removed debug `dbg()` call from production code in demo app
+- Fixed deprecated `:layout` option in Backpex LiveResource usage
+- Fixed demo tests to match actual element IDs
+
 ## [Unreleased]
 
 ### Added

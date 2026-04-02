@@ -114,8 +114,10 @@ jobs:
             coverage: true
           - elixir: "1.20.0-rc.1"
             otp: "28"
+            experimental: true
           - elixir: "1.20.0-rc.1"
             otp: "29.0-rc1"
+            experimental: true
 
     steps:
       - uses: actions/checkout@v4
@@ -141,6 +143,7 @@ jobs:
       - name: Run tests
         if: ${{ !matrix.coverage }}
         run: mix test
+        continue-on-error: ${{ matrix.experimental == true }}
 
       - name: Run tests with coverage
         if: ${{ matrix.coverage }}
