@@ -7,21 +7,19 @@ defmodule Demo.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      DemoWeb.Telemetry,
-      Demo.Repo,
-      {Ecto.Migrator,
-       repos: Application.fetch_env!(:demo, :ecto_repos), skip: skip_migrations?()},
-      {DNSCluster, query: Application.get_env(:demo, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: Demo.PubSub},
-      # Start a worker by calling: Demo.Worker.start_link(arg)
-      # {Demo.Worker, arg},
-      # Start to serve requests, typically the last entry
-      DemoWeb.Endpoint
-    ]
+    children =
+      [
+        DemoWeb.Telemetry
+      ] ++
+        repo_children() ++
+        [
+          {DNSCluster, query: Application.get_env(:demo, :dns_cluster_query) || :ignore},
+          {Phoenix.PubSub, name: Demo.PubSub},
+          DemoWeb.Endpoint
+        ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
-    # for other strategies and supported options
+    # for more strategies and supported options
     opts = [strategy: :one_for_one, name: Demo.Supervisor]
     Supervisor.start_link(children, opts)
   end
@@ -34,8 +32,20 @@ defmodule Demo.Application do
     :ok
   end
 
+  defp repo_children do
+    if System.get_env("SKIP_MIGRATIONS") == "true" do
+      []
+    else
+      [
+        Demo.Repo,
+        {Ecto.Migrator,
+         repos: Application.fetch_env!(:demo, :ecto_repos), skip: skip_migrations?()}
+      ]
+    end
+  end
+
   defp skip_migrations?() do
-    # Skip migrations if no database path is configured (e.g., demo deployment)
-    System.get_env("DATABASE_PATH") == nil or System.get_env("SKIP_MIGRATIONS") == "true"
+    # By default, sqlite migrations are run when using a release
+    System.get_env("RELEASE_NAME") == nil
   end
 end

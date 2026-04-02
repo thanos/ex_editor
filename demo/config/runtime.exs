@@ -22,16 +22,16 @@ end
 
 if config_env() == :prod do
   # Database is optional for demo purposes
-  database_path = System.get_env("DATABASE_PATH")
+  if System.get_env("SKIP_MIGRATIONS") != "true" do
+    database_path =
+      System.get_env("DATABASE_PATH") ||
+        raise """
+        environment variable DATABASE_PATH is missing.
+        For example: /etc/demo/demo.db
+        """
 
-  if database_path do
     config :demo, Demo.Repo,
       database: database_path,
-      pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5")
-  else
-    # Use in-memory database for demo without persistent storage
-    config :demo, Demo.Repo,
-      database: ":memory:",
       pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5")
   end
 
