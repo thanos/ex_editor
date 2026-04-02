@@ -260,6 +260,75 @@ defmodule ExEditor.EditorTest do
       assert Editor.can_redo?(editor)
     end
   end
+
+  describe "undo/1 with plugins" do
+    test "plugins receive correct old and new content on undo" do
+      test_pid = self()
+      Process.put(:test_pid, test_pid)
+
+      editor = Editor.new(plugins: [TestPlugins.UndoRedoTrackingPlugin], content: "initial")
+      {:ok, editor} = Editor.set_content(editor, "changed")
+      {:ok, _editor} = Editor.undo(editor)
+
+      assert_receive {:handle_change, "changed", "initial"}
+    end
+
+    test "redo with plugins receives correct old and new content" do
+      test_pid = self()
+      Process.put(:test_pid, test_pid)
+
+      editor = Editor.new(plugins: [TestPlugins.UndoRedoTrackingPlugin], content: "first")
+      {:ok, editor} = Editor.set_content(editor, "second")
+      {:ok, editor} = Editor.undo(editor)
+
+      # After undo, we should be able to redo
+      assert Editor.can_redo?(editor), "should be able to redo after undo"
+
+      # Clear mailbox from undo
+      receive do
+        {:handle_change, _, _} -> :ok
+      after
+        0 -> :ok
+      end
+
+      {:ok, _editor} = Editor.redo(editor)
+
+      assert_receive {:handle_change, "first", "second"}
+    end
+  end
+
+  describe "set_content/2 with unchanged content" do
+    test "still pushes to history when content is unchanged" do
+      editor = Editor.new(content: "same")
+      {:ok, editor} = Editor.set_content(editor, "same")
+
+      # Content is unchanged but history should still have an entry
+      assert Editor.can_undo?(editor)
+      {:ok, editor} = Editor.undo(editor)
+      assert Editor.get_content(editor) == "same"
+    end
+  end
+
+  describe "notify/3 with multiple plugins" do
+    test "custom events propagate through plugin chain" do
+      editor = Editor.new(plugins: [TestPlugins.ChainPlugin1, TestPlugins.ChainPlugin2])
+      {:ok, editor} = Editor.notify(editor, :chain_event, nil)
+
+      # Both plugins should have processed the event
+      assert Editor.get_metadata(editor, :chain1) == :processed
+      assert Editor.get_metadata(editor, :chain2) == :processed
+    end
+
+    test "editor state from plugin 1 reaches plugin 2" do
+      editor =
+        Editor.new(plugins: [TestPlugins.ChainMetadataSetter, TestPlugins.ChainMetadataReader])
+
+      {:ok, editor} = Editor.notify(editor, :set_and_read, "test_value")
+
+      # Plugin 1 sets metadata, plugin 2 reads and transforms it
+      assert Editor.get_metadata(editor, :transformed) == "TEST_VALUE_transformed"
+    end
+  end
 end
 
 defmodule TestPlugins.MyPlugin do
@@ -358,6 +427,76 @@ defmodule TestPlugins.RejectCustomPlugin do
   @impl true
   def on_event(:reject_me, _payload, _editor) do
     {:error, :rejected}
+  end
+
+  @impl true
+  def on_event(_event, _payload, editor), do: {:ok, editor}
+end
+
+defmodule TestPlugins.UndoRedoTrackingPlugin do
+  @behaviour ExEditor.Plugin
+
+  @impl true
+  def on_event(:handle_change, {old_content, new_content}, editor) do
+    send(Process.get(:test_pid), {:handle_change, old_content, new_content})
+    {:ok, editor}
+  end
+
+  @impl true
+  def on_event(_event, _payload, editor), do: {:ok, editor}
+end
+
+defmodule TestPlugins.ChainPlugin1 do
+  @behaviour ExEditor.Plugin
+
+  alias ExEditor.Editor
+
+  @impl true
+  def on_event(:chain_event, _payload, editor) do
+    {:ok, Editor.put_metadata(editor, :chain1, :processed)}
+  end
+
+  @impl true
+  def on_event(_event, _payload, editor), do: {:ok, editor}
+end
+
+defmodule TestPlugins.ChainPlugin2 do
+  @behaviour ExEditor.Plugin
+
+  alias ExEditor.Editor
+
+  @impl true
+  def on_event(:chain_event, _payload, editor) do
+    {:ok, Editor.put_metadata(editor, :chain2, :processed)}
+  end
+
+  @impl true
+  def on_event(_event, _payload, editor), do: {:ok, editor}
+end
+
+defmodule TestPlugins.ChainMetadataSetter do
+  @behaviour ExEditor.Plugin
+
+  alias ExEditor.Editor
+
+  @impl true
+  def on_event(:set_and_read, value, editor) do
+    {:ok, Editor.put_metadata(editor, :value, String.upcase(value))}
+  end
+
+  @impl true
+  def on_event(_event, _payload, editor), do: {:ok, editor}
+end
+
+defmodule TestPlugins.ChainMetadataReader do
+  @behaviour ExEditor.Plugin
+
+  alias ExEditor.Editor
+
+  @impl true
+  def on_event(:set_and_read, _payload, editor) do
+    value = Editor.get_metadata(editor, :value)
+    {:ok, Editor.put_metadata(editor, :transformed, "#{value}_transformed")}
   end
 
   @impl true

@@ -223,4 +223,26 @@ defmodule ExEditor.HistoryTest do
       assert history.max_size == 50
     end
   end
+
+  describe "max_size edge cases" do
+    test "max_size: 1 allows only one entry" do
+      history = History.new(1)
+      history = History.push(history, Document.from_text("first"))
+
+      assert length(history.entries) == 1
+      assert history.cursor == 1
+      refute History.can_undo?(history)
+    end
+
+    test "max_size: 1 drops oldest when pushing multiple" do
+      history = History.new(1)
+      history = History.push(history, Document.from_text("first"))
+      history = History.push(history, Document.from_text("second"))
+
+      assert length(history.entries) == 1
+      assert Document.to_text(hd(history.entries)) == "second"
+      assert history.cursor == 1
+      refute History.can_undo?(history)
+    end
+  end
 end
