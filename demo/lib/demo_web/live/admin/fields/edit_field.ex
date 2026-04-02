@@ -84,7 +84,9 @@ defmodule DemoWeb.Admin.Fields.EditField do
           phx-throttle={Backpex.Field.throttle(@field_options, assigns)}
           readonly={@readonly}
           disabled={@readonly}
-        ><%= ExEditor.Editor.get_content(@editor) %></BackpexForm.input>
+        >
+          {ExEditor.Editor.get_content(@editor)}
+        </BackpexForm.input>
       </Layout.field_container>
     </div>
     """

@@ -29,6 +29,7 @@ defmodule DemoWeb.Layouts do
 
   attr :fluid?, :boolean, default: true, doc: "if the content uses full width"
   attr :current_url, :string, required: true, doc: "the current url"
+
   attr :current_scope, :map,
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"

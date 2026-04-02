@@ -1,4 +1,3 @@
-
 defmodule DemoWeb.Admin.RedirectController do
   use DemoWeb, :controller
 
