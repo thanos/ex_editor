@@ -25,8 +25,7 @@ defmodule ExEditor.Highlighters.JSON do
   def highlight(text) do
     text
     |> tokenize()
-    |> Enum.map(&format_token/1)
-    |> Enum.join()
+    |> Enum.map_join("", &format_token/1)
   end
 
   # Tokenize JSON text into a list of {type, value} tuples

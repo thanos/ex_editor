@@ -157,12 +157,13 @@ defmodule ExEditor.EditorTest do
       assert {:error, :no_history} = Editor.undo(editor)
     end
 
-    test "undoes to previous content after two changes" do
+    test "undoes to initial content after single change" do
       {:ok, editor} = Editor.new(content: "initial")
       {:ok, editor} = Editor.set_content(editor, "second")
 
-      refute Editor.can_undo?(editor)
-      assert {:error, :no_history} = Editor.undo(editor)
+      assert Editor.can_undo?(editor)
+      {:ok, editor} = Editor.undo(editor)
+      assert Editor.get_content(editor) == "initial"
     end
 
     test "undoes to previous content after multiple changes" do
@@ -187,7 +188,8 @@ defmodule ExEditor.EditorTest do
       {:ok, editor} = Editor.undo(editor)
       assert Editor.get_content(editor) == "2"
 
-      assert {:error, :no_history} = Editor.undo(editor)
+      {:ok, editor} = Editor.undo(editor)
+      assert Editor.get_content(editor) == "1"
     end
   end
 
@@ -224,10 +226,10 @@ defmodule ExEditor.EditorTest do
       refute Editor.can_undo?(editor)
     end
 
-    test "returns false after single change" do
+    test "returns true after single change" do
       {:ok, editor} = Editor.new(content: "initial")
       {:ok, editor} = Editor.set_content(editor, "changed")
-      refute Editor.can_undo?(editor)
+      assert Editor.can_undo?(editor)
     end
 
     test "returns true after multiple changes" do

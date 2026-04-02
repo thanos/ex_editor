@@ -95,12 +95,15 @@ defmodule ExEditor.Editor do
     plugins = Keyword.get(opts, :plugins, [])
     content = Keyword.get(opts, :content, "")
 
+    document = Document.from_text(content)
+    history = History.push(History.new(), document)
+
     editor = %__MODULE__{
-      document: Document.from_text(content),
+      document: document,
       plugins: plugins,
       highlighter: nil,
       metadata: %{},
-      history: History.new(),
+      history: history,
       search: nil,
       options: []
     }
@@ -199,14 +202,14 @@ defmodule ExEditor.Editor do
   def set_content(%__MODULE__{} = editor, content) when is_binary(content) do
     old_content = get_content(editor)
 
-    with {:ok, editor} <- notify_plugins(editor, :before_change, {old_content, content}) do
+    with {:ok, editor} <- notify_plugins_before_change(editor, {old_content, content}) do
       new_document = Document.from_text(content)
       history = History.push(editor.history, new_document)
       editor = %{editor | document: new_document, history: history}
 
-      case notify_plugins(editor, :handle_change, {old_content, content}) do
+      case notify_plugins_handle_change(editor, {old_content, content}) do
         {:ok, editor} -> {:ok, editor}
-        {:error, _reason} -> {:ok, editor}
+        {:error, _reason, editor} -> {:ok, editor}
       end
     end
   end
@@ -229,7 +232,9 @@ defmodule ExEditor.Editor do
   """
   @spec notify(t(), atom(), term()) :: {:ok, t()} | {:error, term()}
   def notify(%__MODULE__{} = editor, event, payload) do
-    notify_plugins(editor, event, payload)
+    Enum.reduce_while(editor.plugins, {:ok, editor}, fn plugin, {:ok, ed} ->
+      notify_plugin(plugin, event, payload, ed)
+    end)
   end
 
   @doc """
@@ -283,21 +288,21 @@ defmodule ExEditor.Editor do
 
       iex> {:ok, editor} = ExEditor.Editor.new(content: "first")
       iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
-      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "third")
       iex> {:ok, editor} = ExEditor.Editor.undo(editor)
       iex> ExEditor.Editor.get_content(editor)
-      "second"
+      "first"
   """
   @spec undo(t()) :: {:ok, t()} | {:error, :no_history}
   def undo(%__MODULE__{history: history} = editor) do
     case History.undo(history) do
       {:ok, document, history} ->
+        old_content = get_content(editor)
         editor = %{editor | document: document, history: history, search: nil}
+        new_content = get_content(editor)
 
-        # Notify plugins of the change
-        case notify_plugins(editor, :handle_change, {nil, get_content(editor)}) do
+        case notify_plugins_handle_change(editor, {old_content, new_content}) do
           {:ok, editor} -> {:ok, editor}
-          {:error, _} -> {:ok, editor}
+          {:error, _reason, editor} -> {:ok, editor}
         end
 
       {:error, reason} ->
@@ -314,22 +319,22 @@ defmodule ExEditor.Editor do
 
       iex> {:ok, editor} = ExEditor.Editor.new(content: "first")
       iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
-      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "third")
       iex> {:ok, editor} = ExEditor.Editor.undo(editor)
       iex> {:ok, editor} = ExEditor.Editor.redo(editor)
       iex> ExEditor.Editor.get_content(editor)
-      "third"
+      "second"
   """
   @spec redo(t()) :: {:ok, t()} | {:error, :no_redo}
   def redo(%__MODULE__{history: history} = editor) do
     case History.redo(history) do
       {:ok, document, history} ->
+        old_content = get_content(editor)
         editor = %{editor | document: document, history: history, search: nil}
+        new_content = get_content(editor)
 
-        # Notify plugins of the change
-        case notify_plugins(editor, :handle_change, {nil, get_content(editor)}) do
+        case notify_plugins_handle_change(editor, {old_content, new_content}) do
           {:ok, editor} -> {:ok, editor}
-          {:error, _} -> {:ok, editor}
+          {:error, _reason, editor} -> {:ok, editor}
         end
 
       {:error, reason} ->
@@ -349,12 +354,6 @@ defmodule ExEditor.Editor do
       iex> {:ok, editor} = ExEditor.Editor.new(content: "first")
       iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
       iex> ExEditor.Editor.can_undo?(editor)
-      false
-
-      iex> {:ok, editor} = ExEditor.Editor.new(content: "first")
-      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
-      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "third")
-      iex> ExEditor.Editor.can_undo?(editor)
       true
   """
   @spec can_undo?(t()) :: boolean()
@@ -372,9 +371,18 @@ defmodule ExEditor.Editor do
   @spec can_redo?(t()) :: boolean()
   def can_redo?(%__MODULE__{history: history}), do: History.can_redo?(history)
 
-  defp notify_plugins(editor, event, payload) do
+  defp notify_plugins_before_change(editor, payload) do
     Enum.reduce_while(editor.plugins, {:ok, editor}, fn plugin, {:ok, ed} ->
-      notify_plugin(plugin, event, payload, ed)
+      notify_plugin(plugin, :before_change, payload, ed)
+    end)
+  end
+
+  defp notify_plugins_handle_change(editor, payload) do
+    Enum.reduce_while(editor.plugins, {:ok, editor}, fn plugin, {:ok, ed} ->
+      case notify_plugin_with_fallback(plugin, :handle_change, payload, ed) do
+        {:ok, updated_editor} -> {:cont, {:ok, updated_editor}}
+        {:error, reason} -> {:halt, {:error, reason, ed}}
+      end
     end)
   end
 
@@ -386,6 +394,14 @@ defmodule ExEditor.Editor do
       end
     else
       {:cont, {:ok, editor}}
+    end
+  end
+
+  defp notify_plugin_with_fallback(plugin, event, payload, editor) do
+    if function_exported?(plugin, :on_event, 3) do
+      plugin.on_event(event, payload, editor)
+    else
+      {:ok, editor}
     end
   end
 end

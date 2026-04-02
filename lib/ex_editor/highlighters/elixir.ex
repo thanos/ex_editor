@@ -38,8 +38,7 @@ defmodule ExEditor.Highlighters.Elixir do
   def highlight(text) do
     text
     |> tokenize()
-    |> Enum.map(&format_token/1)
-    |> Enum.join()
+    |> Enum.map_join("", &format_token/1)
   end
 
   # Tokenize Elixir text into a list of {type, value} tuples
