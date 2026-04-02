@@ -190,8 +190,11 @@ jobs:
       - name: Install dependencies
         run: mix deps.get
 
+      - name: Build PLT
+        run: mix dialyzer --plt
+
       - name: Run Dialyzer
-        run: mix dialyzer
+        run: mix dialyzer --format short
 
   demo:
     name: Demo - Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }}
