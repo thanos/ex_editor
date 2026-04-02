@@ -10,7 +10,7 @@ defmodule Demo.CMS.CodeSnippet do
   end
 
   @doc false
-  def changeset(code_snippet, attrs, meta \\ []) do
+  def changeset(code_snippet, attrs, _meta \\ []) do
     code_snippet
     |> cast(attrs, [:name, :code])
     |> validate_required([:name, :code])

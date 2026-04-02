@@ -20,7 +20,6 @@ config :demo, DemoWeb.Endpoint,
 # In test we don't send emails
 config :demo, Demo.Mailer, adapter: Swoosh.Adapters.Test
 
-
 # Print only warnings and errors during test
 config :logger, level: :warning
 

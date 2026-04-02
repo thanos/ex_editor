@@ -1,0 +1,12 @@
+{application,ex_editor,
+             [{modules,['Elixir.ExEditor','Elixir.ExEditor.Document',
+                        'Elixir.ExEditor.Editor',
+                        'Elixir.ExEditor.Highlighter',
+                        'Elixir.ExEditor.Highlighters.Elixir',
+                        'Elixir.ExEditor.Highlighters.JSON',
+                        'Elixir.ExEditor.Plugin']},
+              {optional_applications,[]},
+              {applications,[kernel,stdlib,elixir,logger,excoveralls]},
+              {description,"A headless code editor library for Phoenix LiveView applications with a plugin system for extensibility."},
+              {registered,[]},
+              {vsn,"0.1.1"}]}.

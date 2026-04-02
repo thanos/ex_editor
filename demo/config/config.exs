@@ -29,7 +29,6 @@ config :demo, DemoWeb.Endpoint,
 # locally. You can see the emails in your browser, at "/dev/mailbox".
 #
 
-
 # Configure esbuild (the version is required)
 config :esbuild,
   version: "0.25.4",

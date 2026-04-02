@@ -25,10 +25,10 @@ defmodule DemoWeb.Router do
     pipe_through :browser
     backpex_routes()
 
-      get "/", RedirectController, :redirect_to_snippets
+    get "/", RedirectController, :redirect_to_snippets
 
     live_session :backpex, on_mount: Backpex.InitAssigns do
-          live_resources "/code_snippets", CodeSnippetLive
+      live_resources "/code_snippets", CodeSnippetLive
     end
   end
 

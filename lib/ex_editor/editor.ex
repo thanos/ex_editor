@@ -1,16 +1,16 @@
 defmodule ExEditor.Editor do
   @moduledoc """
-  Main editor state manager with plugin support.
+  Main editor state manager with plugin support, undo/redo history, and metadata.
 
   The editor manages document state and coordinates with plugins
-  for features like syntax highlighting.
+  for features like syntax highlighting, content validation, and change tracking.
 
   ## Example
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
-      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello\\nWorld")
-      iex> ExEditor.Editor.get_content(editor)
-      "Hello\\nWorld"
+      editor = ExEditor.Editor.new()
+      {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello\\nWorld")
+      ExEditor.Editor.get_content(editor)
+      # => "Hello\\nWorld"
 
   ## Plugins
 
@@ -29,7 +29,25 @@ defmodule ExEditor.Editor do
         def on_event(_event, _payload, editor), do: {:ok, editor}
       end
 
-      {:ok, editor} = ExEditor.Editor.new(plugins: [MyPlugin])
+      editor = ExEditor.Editor.new(plugins: [MyPlugin])
+
+  ## Undo/Redo
+
+  The editor maintains a bounded history of document snapshots for undo/redo:
+
+      editor = ExEditor.Editor.new(content: "first")
+      {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
+      {:ok, editor} = ExEditor.Editor.undo(editor)
+      ExEditor.Editor.get_content(editor)
+      # => "first"
+
+  ## Metadata
+
+  Plugins can store arbitrary state in the editor's metadata map:
+
+      editor = ExEditor.Editor.put_metadata(editor, :word_count, 42)
+      ExEditor.Editor.get_metadata(editor, :word_count)
+      # => 42
 
   ## Syntax Highlighting
 
@@ -37,7 +55,7 @@ defmodule ExEditor.Editor do
 
       alias ExEditor.Highlighters.JSON
 
-      {:ok, editor} = ExEditor.Editor.new()
+      editor = ExEditor.Editor.new()
       editor = ExEditor.Editor.set_highlighter(editor, JSON)
       {:ok, editor} = ExEditor.Editor.set_content(editor, ~s({"name": "John"}))
 
@@ -46,14 +64,25 @@ defmodule ExEditor.Editor do
   """
 
   alias ExEditor.Document
+  alias ExEditor.History
 
-  defstruct [:document, :plugins, :highlighter, :options, metadata: %{}]
+  defstruct [
+    :document,
+    :plugins,
+    :highlighter,
+    :options,
+    metadata: %{},
+    history: History.new(),
+    search: nil
+  ]
 
   @type t :: %__MODULE__{
           document: Document.t(),
           plugins: list(module()),
           highlighter: module() | nil,
           metadata: map(),
+          history: History.t(),
+          search: map() | nil,
           options: keyword()
         }
 
@@ -67,32 +96,46 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> is_struct(editor, ExEditor.Editor)
       true
 
-      iex> {:ok, editor} = ExEditor.Editor.new(plugins: [MyPlugin])
+      iex> editor = ExEditor.Editor.new(plugins: [MyPlugin])
       iex> editor.plugins
       [MyPlugin]
 
-      iex> {:ok, editor} = ExEditor.Editor.new(content: "Hello")
+      iex> editor = ExEditor.Editor.new(content: "Hello")
       iex> ExEditor.Editor.get_content(editor)
       "Hello"
   """
-  @spec new(keyword()) :: {:ok, t()}
+  @spec new(keyword()) :: t()
   def new(opts \\ []) do
     plugins = Keyword.get(opts, :plugins, [])
     content = Keyword.get(opts, :content, "")
 
-    editor = %__MODULE__{
-      document: Document.from_text(content),
+    validate_plugins!(plugins)
+
+    document = Document.from_text(content)
+    history = History.push(History.new(), document)
+
+    %__MODULE__{
+      document: document,
       plugins: plugins,
       highlighter: nil,
       metadata: %{},
+      history: history,
+      search: nil,
       options: []
     }
+  end
 
-    {:ok, editor}
+  defp validate_plugins!(plugins) do
+    Enum.each(plugins, fn plugin ->
+      unless function_exported?(plugin, :on_event, 3) do
+        raise ArgumentError,
+              "plugin #{inspect(plugin)} must implement on_event/3 callback"
+      end
+    end)
   end
 
   @doc """
@@ -101,7 +144,7 @@ defmodule ExEditor.Editor do
   ## Examples
 
       iex> alias ExEditor.Highlighters.JSON
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.set_highlighter(editor, JSON)
       iex> editor.highlighter
       ExEditor.Highlighters.JSON
@@ -116,7 +159,7 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.put_metadata(editor, :my_plugin, %{state: :active})
       iex> ExEditor.Editor.get_metadata(editor, :my_plugin)
       %{state: :active}
@@ -133,11 +176,11 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> ExEditor.Editor.get_metadata(editor, :missing)
       nil
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.put_metadata(editor, :key, "value")
       iex> ExEditor.Editor.get_metadata(editor, :key)
       "value"
@@ -152,7 +195,7 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.put_metadata(editor, :key, "value")
       iex> editor = ExEditor.Editor.clear_metadata(editor, :key)
       iex> ExEditor.Editor.get_metadata(editor, :key)
@@ -174,26 +217,26 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello\\nWorld")
       iex> ExEditor.Editor.get_content(editor)
       "Hello\\nWorld"
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> {:error, :invalid_content} = ExEditor.Editor.set_content(editor, nil)
   """
   @spec set_content(t(), String.t()) :: {:ok, t()} | {:error, term()}
   def set_content(%__MODULE__{} = editor, content) when is_binary(content) do
     old_content = get_content(editor)
 
-    with {:ok, editor} <- notify_plugins(editor, :before_change, {old_content, content}) do
+    with {:ok, editor} <- notify_plugins_before_change(editor, {old_content, content}) do
       new_document = Document.from_text(content)
-      editor = %{editor | document: new_document}
-      # :handle_change is reactive - always succeed after document is updated
-      # Plugin errors are ignored but editor state from last successful plugin is used
-      case notify_plugins(editor, :handle_change, {old_content, content}) do
+      history = History.push(editor.history, new_document)
+      editor = %{editor | document: new_document, history: history}
+
+      case notify_plugins_handle_change(editor, {old_content, content}) do
         {:ok, editor} -> {:ok, editor}
-        {:error, _reason} -> {:ok, editor}
+        {:error, _reason, editor} -> {:ok, editor}
       end
     end
   end
@@ -209,14 +252,16 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> {:ok, editor} = ExEditor.Editor.notify(editor, :save, %{path: "file.ex"})
       iex> editor.metadata
       %{}
   """
   @spec notify(t(), atom(), term()) :: {:ok, t()} | {:error, term()}
   def notify(%__MODULE__{} = editor, event, payload) do
-    notify_plugins(editor, event, payload)
+    Enum.reduce_while(editor.plugins, {:ok, editor}, fn plugin, {:ok, ed} ->
+      notify_plugin(plugin, event, payload, ed)
+    end)
   end
 
   @doc """
@@ -224,7 +269,7 @@ defmodule ExEditor.Editor do
 
   ## Examples
 
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "Test")
       iex> ExEditor.Editor.get_content(editor)
       "Test"
@@ -242,7 +287,7 @@ defmodule ExEditor.Editor do
   ## Examples
 
       iex> alias ExEditor.Highlighters.JSON
-      iex> {:ok, editor} = ExEditor.Editor.new()
+      iex> editor = ExEditor.Editor.new()
       iex> editor = ExEditor.Editor.set_highlighter(editor, JSON)
       iex> {:ok, editor} = ExEditor.Editor.set_content(editor, ~s({"name": "John"}))
       iex> highlighted = ExEditor.Editor.get_highlighted_content(editor)
@@ -259,20 +304,129 @@ defmodule ExEditor.Editor do
     highlighter.highlight(content)
   end
 
-  defp notify_plugins(editor, event, payload) do
+  # Undo/Redo
+
+  @doc """
+  Undoes the last content change.
+
+  Returns `{:ok, editor}` with the previous content, or `{:error, :no_history}` if nothing to undo.
+
+  After restoring the previous document, plugins are notified with a `:handle_change` event
+  containing `{old_content, new_content}`. The search state is also cleared.
+
+  ## Examples
+
+      iex> editor = ExEditor.Editor.new(content: "first")
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
+      iex> {:ok, editor} = ExEditor.Editor.undo(editor)
+      iex> ExEditor.Editor.get_content(editor)
+      "first"
+  """
+  @spec undo(t()) :: {:ok, t()} | {:error, :no_history}
+  def undo(%__MODULE__{history: history} = editor) do
+    case History.undo(history) do
+      {:ok, document, history} ->
+        old_content = get_content(editor)
+        editor = %{editor | document: document, history: history, search: nil}
+        new_content = get_content(editor)
+
+        case notify_plugins_handle_change(editor, {old_content, new_content}) do
+          {:ok, editor} -> {:ok, editor}
+          {:error, _reason, editor} -> {:ok, editor}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Redoes the last undone change.
+
+  Returns `{:ok, editor}` with the restored content, or `{:error, :no_redo}` if nothing to redo.
+
+  After restoring the document, plugins are notified with a `:handle_change` event
+  containing `{old_content, new_content}`. The search state is also cleared.
+
+  ## Examples
+
+      iex> editor = ExEditor.Editor.new(content: "first")
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
+      iex> {:ok, editor} = ExEditor.Editor.undo(editor)
+      iex> {:ok, editor} = ExEditor.Editor.redo(editor)
+      iex> ExEditor.Editor.get_content(editor)
+      "second"
+  """
+  @spec redo(t()) :: {:ok, t()} | {:error, :no_redo}
+  def redo(%__MODULE__{history: history} = editor) do
+    case History.redo(history) do
+      {:ok, document, history} ->
+        old_content = get_content(editor)
+        editor = %{editor | document: document, history: history, search: nil}
+        new_content = get_content(editor)
+
+        case notify_plugins_handle_change(editor, {old_content, new_content}) do
+          {:ok, editor} -> {:ok, editor}
+          {:error, _reason, editor} -> {:ok, editor}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Checks if undo is available.
+
+  ## Examples
+
+      iex> editor = ExEditor.Editor.new()
+      iex> ExEditor.Editor.can_undo?(editor)
+      false
+
+      iex> editor = ExEditor.Editor.new(content: "first")
+      iex> {:ok, editor} = ExEditor.Editor.set_content(editor, "second")
+      iex> ExEditor.Editor.can_undo?(editor)
+      true
+  """
+  @spec can_undo?(t()) :: boolean()
+  def can_undo?(%__MODULE__{history: history}), do: History.can_undo?(history)
+
+  @doc """
+  Checks if redo is available.
+
+  ## Examples
+
+      iex> editor = ExEditor.Editor.new()
+      iex> ExEditor.Editor.can_redo?(editor)
+      false
+  """
+  @spec can_redo?(t()) :: boolean()
+  def can_redo?(%__MODULE__{history: history}), do: History.can_redo?(history)
+
+  defp notify_plugins_before_change(editor, payload) do
     Enum.reduce_while(editor.plugins, {:ok, editor}, fn plugin, {:ok, ed} ->
-      notify_plugin(plugin, event, payload, ed)
+      notify_plugin(plugin, :before_change, payload, ed)
+    end)
+  end
+
+  defp notify_plugins_handle_change(editor, payload) do
+    Enum.reduce_while(editor.plugins, {:ok, editor}, fn plugin, {:ok, ed} ->
+      case notify_plugin_with_fallback(plugin, :handle_change, payload, ed) do
+        {:ok, updated_editor} -> {:cont, {:ok, updated_editor}}
+        {:error, reason} -> {:halt, {:error, reason, ed}}
+      end
     end)
   end
 
   defp notify_plugin(plugin, event, payload, editor) do
-    if function_exported?(plugin, :on_event, 3) do
-      case plugin.on_event(event, payload, editor) do
-        {:ok, updated_editor} -> {:cont, {:ok, updated_editor}}
-        {:error, reason} -> {:halt, {:error, reason}}
-      end
-    else
-      {:cont, {:ok, editor}}
+    case plugin.on_event(event, payload, editor) do
+      {:ok, updated_editor} -> {:cont, {:ok, updated_editor}}
+      {:error, reason} -> {:halt, {:error, reason}}
     end
+  end
+
+  defp notify_plugin_with_fallback(plugin, event, payload, editor) do
+    plugin.on_event(event, payload, editor)
   end
 end

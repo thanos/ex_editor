@@ -48,7 +48,7 @@ end
 Usage:
 
 ```elixir
-{:ok, editor} = ExEditor.Editor.new(plugins: [MyEditor.Plugins.Logger])
+editor = ExEditor.Editor.new(plugins: [MyEditor.Plugins.Logger])
 {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello world")
 # Prints: Content changed!
 ```
@@ -80,7 +80,7 @@ end
 Usage:
 
 ```elixir
-{:ok, editor} = ExEditor.Editor.new(plugins: [MyEditor.Plugins.MaxLength])
+editor = ExEditor.Editor.new(plugins: [MyEditor.Plugins.MaxLength])
 
 case ExEditor.Editor.set_content(editor, really_long_content) do
   {:ok, editor} -> 
@@ -108,9 +108,9 @@ defmodule MyEditor.Plugins.ChangeTracker do
       new_length: String.length(new)
     }
 
-    history = Map.get(editor.metadata, :change_history, [])
+    history = ExEditor.Editor.get_metadata(editor, :change_history) || []
     updated_history = [change | history] |> Enum.take(100)
-    
+
     {:ok, ExEditor.Editor.put_metadata(editor, :change_history, updated_history)}
   end
 
@@ -119,7 +119,7 @@ defmodule MyEditor.Plugins.ChangeTracker do
 
   # Public helper to get history
   def get_history(editor) do
-    Map.get(editor.metadata, :change_history, [])
+    ExEditor.Editor.get_metadata(editor, :change_history) || []
   end
 end
 ```
@@ -127,7 +127,7 @@ end
 Usage:
 
 ```elixir
-{:ok, editor} = ExEditor.Editor.new(plugins: [MyEditor.Plugins.ChangeTracker])
+editor = ExEditor.Editor.new(plugins: [MyEditor.Plugins.ChangeTracker])
 {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello")
 {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello world")
 
@@ -169,7 +169,7 @@ end
 Usage:
 
 ```elixir
-{:ok, editor} = ExEditor.Editor.new(
+editor = ExEditor.Editor.new(
   plugins: [MyEditor.Plugins.WordCounter, MyEditor.Plugins.CharCounter]
 )
 
@@ -208,7 +208,7 @@ end
 Usage:
 
 ```elixir
-{:ok, editor} = ExEditor.Editor.new(plugins: [MyEditor.Plugins.AutoSave])
+editor = ExEditor.Editor.new(plugins: [MyEditor.Plugins.AutoSave])
 {:ok, editor} = ExEditor.Editor.set_content(editor, "Hello world")
 # unsaved_changes: true
 
@@ -218,22 +218,22 @@ Usage:
 
 ## Complete Example: Code Linter
 
+This example uses `:before_change` to reject content with errors and stores
+warnings in metadata for the UI to display. Note that `:before_change` runs
+the linter and stores warnings regardless of whether the change is accepted --
+if the change is rejected, `:handle_change` is never called, so storing
+warnings in `:before_change` ensures they are always up to date.
+
 ```elixir
 defmodule MyEditor.Plugins.Linter do
   @behaviour ExEditor.Plugin
 
   @impl true
-  def on_event(:handle_change, {_old, new}, editor) do
-    warnings = run_linter(new)
-    {:ok, ExEditor.Editor.put_metadata(editor, :linter_warnings, warnings)}
-  end
-
-  @impl true
   def on_event(:before_change, {_old, new}, editor) do
-    # Optionally reject code with errors
     warnings = run_linter(new)
+    editor = ExEditor.Editor.put_metadata(editor, :linter_warnings, warnings)
     errors = Enum.filter(warnings, &(&1.severity == :error))
-    
+
     if Enum.any?(errors) do
       {:error, {:linter_errors, errors}}
     else
@@ -250,7 +250,7 @@ defmodule MyEditor.Plugins.Linter do
   end
 
   def get_warnings(editor) do
-    Map.get(editor.metadata, :linter_warnings, [])
+    ExEditor.Editor.get_metadata(editor, :linter_warnings) || []
   end
 end
 ```
@@ -275,7 +275,7 @@ end
    ```elixir
    plugins: [
      ValidationPlugin,    # May reject
-     MaxLengthPlugin,     # May reject  
+     MaxLengthPlugin,     # May reject
      AutoSavePlugin,      # Reactive
      AnalyticsPlugin      # Reactive
    ]

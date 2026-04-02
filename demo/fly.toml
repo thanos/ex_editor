@@ -1,0 +1,32 @@
+# fly.toml - Production deployment config
+#
+# This file is used by GitHub Actions for production deployments.
+# For local testing, use: flyctl deploy --config demo/fly.toml --dockerfile Dockerfile
+
+app = 'ex-editor'
+primary_region = 'ewr'
+kill_signal = 'SIGTERM'
+
+[env]
+  PHX_HOST = 'ex-editor.fly.dev'
+  PHX_SERVER = 'true'
+  PORT = '8080'
+  SECRET_KEY_BASE = 'UTE9PqZhkbmN1Lf6igbLV3VA3Qqpq/bK7/iSSaO8G4WTPEQ2SceqbtjhiptjmXH3'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines = 0
+  processes = ['app']
+
+  [http_service.concurrency]
+    type = 'connections'
+    hard_limit = 1000
+    soft_limit = 1000
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024

@@ -1,5 +1,5 @@
 <div class="bg-white border-b border-gray-200">
-  <Backpex.HTML.Layout.app_shell fluid={@fluid?} >
+  <Backpex.HTML.Layout.app_shell fluid={@fluid?}>
     <:topbar>
       <Backpex.HTML.Layout.topbar_branding />
 
@@ -19,7 +19,10 @@
     </:topbar>
     <:sidebar>
       <!-- Sidebar Content -->
-      <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/code_snippets"}>
+      <Backpex.HTML.Layout.sidebar_item
+        current_url={@current_url}
+        navigate={~p"/admin/code_snippets"}
+      >
         <.icon name="hero-book-open" class="size-5" /> Code Snippets
       </Backpex.HTML.Layout.sidebar_item>
     </:sidebar>
