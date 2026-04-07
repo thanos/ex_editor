@@ -1,0 +1,246 @@
+/* ExEditor Default Styles */
+/* VS Code Dark Theme Inspired */
+
+.ex-editor-container {
+  position: relative;
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: 1px solid #3e3e3e;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.ex-editor-wrapper {
+  position: relative;
+  height: 100%;
+  min-height: 200px;
+}
+
+/* Line Numbers */
+.ex-editor-line-numbers {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3rem;
+  padding: 1rem 0.5rem;
+  text-align: right;
+  color: #858585;
+  user-select: none;
+  pointer-events: none;
+  border-right: 1px solid #3e3e3e;
+  background: #252525;
+  white-space: pre;
+  overflow: hidden;
+  line-height: inherit;
+  font-size: inherit;
+}
+
+/* Highlighted Content Layer (Visible) */
+.ex-editor-highlight {
+  position: absolute;
+  top: 0;
+  left: 3.5rem;
+  right: 0;
+  bottom: 0;
+  padding: 1rem;
+  margin: 0;
+  overflow: auto;
+  white-space: pre;
+  pointer-events: none;
+  line-height: inherit;
+  font-size: inherit;
+}
+
+/* Individual Line Wrapper */
+.ex-editor-line {
+  display: block;
+  min-height: 1.5em;
+}
+
+/* Textarea Layer (Invisible) */
+.ex-editor-textarea {
+  position: absolute;
+  top: 0;
+  left: 3.5rem;
+  right: 0;
+  bottom: 0;
+  padding: 1rem;
+  margin: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: #d4d4d4;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  white-space: pre;
+  overflow: auto;
+  z-index: 1;
+}
+
+.ex-editor-textarea:focus {
+  outline: none;
+}
+
+/* Fake Cursor */
+.ex-editor-cursor {
+  position: absolute;
+  width: 2px;
+  height: 1.2em;
+  background: #d4d4d4;
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity 0.05s;
+}
+
+/* Cursor Blink Animation */
+@keyframes ex-editor-cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+.ex-editor-cursor.blink {
+  animation: ex-editor-cursor-blink 1s step-end infinite;
+}
+
+/* Light Theme Support */
+.ex-editor-container.light {
+  background: #ffffff;
+  color: #1e1e1e;
+  border-color: #e0e0e0;
+}
+
+.ex-editor-container.light .ex-editor-line-numbers {
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+  color: #999999;
+}
+
+.ex-editor-container.light .ex-editor-highlight {
+  background: #ffffff;
+}
+
+.ex-editor-container.light .ex-editor-textarea {
+  caret-color: #1e1e1e;
+}
+
+.ex-editor-container.light .ex-editor-cursor {
+  background: #1e1e1e;
+}
+
+/* Read-only Mode */
+.ex-editor-container.readonly .ex-editor-textarea {
+  cursor: default;
+}
+
+.ex-editor-container.readonly .ex-editor-cursor {
+  display: none;
+}
+
+/* Syntax Highlighting Classes */
+/* VS Code Dark theme inspired colors */
+
+.hl-keyword {
+  color: #569cd6;
+  font-weight: 600;
+}
+
+.hl-string {
+  color: #ce9178;
+}
+
+.hl-number {
+  color: #b5cea8;
+}
+
+.hl-boolean {
+  color: #569cd6;
+}
+
+.hl-null {
+  color: #569cd6;
+}
+
+.hl-key {
+  color: #9cdcfe;
+}
+
+.hl-punctuation {
+  color: #d4d4d4;
+}
+
+.hl-comment {
+  color: #6a9955;
+  font-style: italic;
+}
+
+.hl-operator {
+  color: #d4d4d4;
+}
+
+.hl-function {
+  color: #dcdcaa;
+}
+
+.hl-module {
+  color: #4ec9b0;
+}
+
+.hl-variable {
+  color: #9cdcfe;
+}
+
+/* Light theme syntax highlighting overrides */
+.ex-editor-container.light .hl-keyword {
+  color: #0000ff;
+}
+
+.ex-editor-container.light .hl-string {
+  color: #a31515;
+}
+
+.ex-editor-container.light .hl-number {
+  color: #098658;
+}
+
+.ex-editor-container.light .hl-boolean {
+  color: #0000ff;
+}
+
+.ex-editor-container.light .hl-null {
+  color: #0000ff;
+}
+
+.ex-editor-container.light .hl-key {
+  color: #001080;
+}
+
+.ex-editor-container.light .hl-punctuation {
+  color: #1e1e1e;
+}
+
+.ex-editor-container.light .hl-comment {
+  color: #008000;
+}
+
+.ex-editor-container.light .hl-operator {
+  color: #1e1e1e;
+}
+
+.ex-editor-container.light .hl-function {
+  color: #795e26;
+}
+
+.ex-editor-container.light .hl-module {
+  color: #267f99;
+}
+
+.ex-editor-container.light .hl-variable {
+  color: #001080;
+}

@@ -61,55 +61,150 @@
     --tab-radius: 0.5rem;
 }
 
-/* Syntax Highlighting Classes */
-/* VS Code Dark theme inspired colors */
+/* ExEditor Styles */
+.ex-editor-container {
+    position: relative;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    border: 1px solid #3e3e3e;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
 
+.ex-editor-wrapper {
+    position: relative;
+    height: 100%;
+    min-height: 200px;
+}
+
+.ex-editor-line-numbers {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3rem;
+    padding: 1rem 0.5rem;
+    text-align: right;
+    color: #858585;
+    user-select: none;
+    pointer-events: none;
+    border-right: 1px solid #3e3e3e;
+    background: #252525;
+    white-space: pre;
+    overflow: hidden;
+    line-height: inherit;
+    font-size: inherit;
+}
+
+/* Highlighted Content Layer */
+.ex-editor-highlight {
+    position: absolute;
+    top: 0;
+    left: 3.5rem;
+    right: 0;
+    bottom: 0;
+    padding: 1rem;
+    margin: 0;
+    overflow: auto;
+    white-space: pre;
+    pointer-events: none;
+    line-height: inherit;
+    font-size: inherit;
+}
+
+.ex-editor-line {
+    display: block;
+    min-height: 1.5em;
+}
+
+/* Textarea Layer */
+.ex-editor-textarea {
+    position: absolute;
+    top: 0;
+    left: 3.5rem;
+    right: 0;
+    bottom: 0;
+    padding: 1rem;
+    margin: 0;
+    background: transparent;
+    color: transparent;
+    caret-color: #d4d4d4;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    white-space: pre;
+    overflow: auto;
+    z-index: 1;
+}
+
+.ex-editor-textarea:focus {
+    outline: none;
+}
+
+/* Fake Cursor */
+.ex-editor-cursor {
+    position: absolute;
+    width: 2px;
+    height: 1.2em;
+    background: #d4d4d4;
+    pointer-events: none;
+    z-index: 2;
+    transition: opacity 0.05s;
+}
+
+/* Syntax Highlighting Classes */
 .hl-keyword {
-    color: #569cd6; /* Light blue for keywords */
+    color: #569cd6;
     font-weight: 600;
 }
 
 .hl-string {
-    color: #ce9178; /* Orange/brown for strings */
+    color: #ce9178;
 }
 
 .hl-number {
-    color: #b5cea8; /* Light green for numbers */
+    color: #b5cea8;
 }
 
 .hl-boolean {
-    color: #569cd6; /* Light blue for booleans */
+    color: #569cd6;
 }
 
 .hl-null {
-    color: #569cd6; /* Light blue for null */
+    color: #569cd6;
 }
 
 .hl-key {
-    color: #9cdcfe; /* Light cyan for object keys */
+    color: #9cdcfe;
 }
 
 .hl-punctuation {
-    color: #d4d4d4; /* Light gray for brackets, braces, etc */
+    color: #d4d4d4;
 }
 
 .hl-comment {
-    color: #6a9955; /* Green for comments */
+    color: #6a9955;
     font-style: italic;
 }
 
 .hl-operator {
-    color: #d4d4d4; /* Light gray for operators */
+    color: #d4d4d4;
 }
 
 .hl-function {
-    color: #dcdcaa; /* Yellow for functions */
+    color: #dcdcaa;
 }
 
 .hl-module {
-    color: #4ec9b0; /* Teal/cyan for module names */
+    color: #4ec9b0;
 }
 
 .hl-variable {
-    color: #9cdcfe; /* Light cyan for variables */
+    color: #9cdcfe;
 }
