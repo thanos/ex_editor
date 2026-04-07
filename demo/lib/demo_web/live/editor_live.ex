@@ -74,7 +74,9 @@ defmodule DemoWeb.EditorLive do
     <div class="min-h-screen bg-[#1e1e1e] text-[#d4d4d4]">
       <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold mb-6 text-white">ExEditor Demo</h1>
-        <a href="/admin">Backpex Example</a>
+        <%= if admin_enabled?() do %>
+          <a href="/admin" class="text-blue-400 hover:text-blue-300 mb-4 inline-block">Backpex Admin</a>
+        <% end %>
         <div id="cursor-position" class="mb-4 flex items-center justify-between">
           <div class="text-sm text-gray-400">
             Ln {@cursor_line}, Col {@cursor_col}
@@ -107,6 +109,8 @@ defmodule DemoWeb.EditorLive do
     </div>
     """
   end
+
+  defp admin_enabled?, do: System.get_env("SKIP_MIGRATIONS") != "true"
 
   defp calculate_cursor_position(content, position) do
     # Split content into lines and calculate line/col from position
