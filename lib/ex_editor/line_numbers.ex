@@ -46,8 +46,7 @@ defmodule ExEditor.LineNumbers do
   def render(count) when is_integer(count) and count >= 1 do
     numbers =
       1..count
-      |> Enum.map(&Integer.to_string/1)
-      |> Enum.join("\n")
+      |> Enum.map_join("\n", &Integer.to_string/1)
 
     ~s(<div class="ex-editor-line-numbers">#{numbers}</div>)
   end
@@ -99,8 +98,7 @@ defmodule ExEditor.LineNumbers do
 
     numbers =
       start..(start + actual_count - 1)
-      |> Enum.map(&Integer.to_string/1)
-      |> Enum.join("\n")
+      |> Enum.map_join("\n", &Integer.to_string/1)
 
     ~s(<div class="ex-editor-line-numbers">#{numbers}</div>)
   end

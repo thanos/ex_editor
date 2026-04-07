@@ -41,8 +41,7 @@ defmodule ExEditor.HighlightedLines do
   def wrap_lines(highlighted_html) when is_binary(highlighted_html) do
     highlighted_html
     |> String.split("\n")
-    |> Enum.map(&wrap_line/1)
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", &wrap_line/1)
   end
 
   defp wrap_line(content) do
@@ -64,8 +63,7 @@ defmodule ExEditor.HighlightedLines do
   def wrap_lines_with_empties(highlighted_html) when is_binary(highlighted_html) do
     highlighted_html
     |> String.split("\n")
-    |> Enum.map(&wrap_line_with_empty/1)
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", &wrap_line_with_empty/1)
   end
 
   defp wrap_line_with_empty(""), do: ~s(<div class="ex-editor-line">&nbsp;</div>)

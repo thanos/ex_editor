@@ -1,8 +1,8 @@
 defmodule ExEditor.LineNumbersTest do
   use ExUnit.Case, async: true
 
-  alias ExEditor.LineNumbers
   alias ExEditor.Document
+  alias ExEditor.LineNumbers
 
   describe "render/1" do
     test "renders line numbers for given count" do

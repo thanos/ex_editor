@@ -51,6 +51,7 @@ defmodule ExEditorWeb do
         def live_editor do
           quote do
             import ExEditorWeb, only: [live_editor: 1]
+            alias ExEditorWeb.LiveEditor
           end
         end
       end
@@ -58,6 +59,18 @@ defmodule ExEditorWeb do
   defmacro __using__(_opts) do
     quote do
       import ExEditorWeb, only: [live_editor: 1]
+      alias ExEditorWeb.LiveEditor
     end
   end
+
+  @doc """
+  Renders a live_editor component.
+
+  Delegates to `ExEditorWeb.LiveEditor.live_editor/1`.
+
+  ## Examples
+
+      <.live_editor id="editor" content={@code} language={:elixir} />
+  """
+  defdelegate live_editor(assigns), to: ExEditorWeb.LiveEditor
 end
