@@ -267,14 +267,14 @@ defmodule ExEditor.Plugin do
           {:ok, assign(socket, :editor, editor)}
         end
 
-        def handle_event(\"code_changed\", %{\"content\" => new_code}, socket) do
+        def handle_event("code_changed", %{"content" => new_code}, socket) do
           case ExEditor.Editor.set_content(socket.assigns.editor, new_code) do
             {:ok, editor} ->
               {:noreply, assign(socket, :editor, editor)}
 
             {:error, reason} ->
               # Plugin rejected the change - show error to user
-              {:noreply, put_flash(socket, :error, \"Invalid: #{reason}\")}
+              {:noreply, put_flash(socket, :error, "Invalid: " <> to_string(reason))}
           end
         end
       end
