@@ -1,175 +1,104 @@
 /**
  * ExEditor JavaScript Hook
  *
- * Provides scroll synchronization and cursor rendering for the double-buffer
- * editor implementation. Works with ExEditorWeb.LiveEditor LiveComponent.
+ * Responsibilities:
+ *   - Sync scroll position between textarea and highlight layer
+ *   - Update line numbers in the gutter immediately on input (no server round-trip)
+ *   - Send debounced content changes to server for syntax highlighting
+ *   - Handle Tab key
  *
- * Usage:
- *   import EditorHook from "ex_editor/hooks/editor"
- *   let liveSocket = new LiveSocket("/live", Socket, {
- *     hooks: { EditorHook }
- *   })
+ * The textarea and gutter are both phx-update="ignore" — LiveView never patches
+ * them after mount. Only the highlighted <pre> is updated by the server.
  */
 export default {
   mounted() {
     this.textarea = this.el.querySelector('.ex-editor-textarea')
     this.highlight = this.el.querySelector('.ex-editor-highlight')
-    this.lineNumbers = this.el.querySelector('.ex-editor-line-numbers')
+    this.gutter = this.el.querySelector('.ex-editor-gutter')
 
-    this.cursorEl = null
-    this.blinkInterval = null
-    this.charWidth = null
-    this.lineHeight = null
+    if (!this.textarea || !this.highlight) {
+      console.error('[ExEditor] Missing textarea or highlight element')
+      return
+    }
 
-    this.bindEvents()
-    this.setupFakeCursor()
-    this.measureFont()
-    this.updateCursor()
+    this.debounceTimeout = null
+    this.lastLineCount = 0
+
+    this.textarea.addEventListener('input', this.onInput.bind(this))
+    this.textarea.addEventListener('scroll', this.onScroll.bind(this))
+    this.textarea.addEventListener('keydown', this.onKeyDown.bind(this))
+
+    // Initial sync
+    this.updateLineNumbers()
+    this.syncScroll()
+  },
+
+  // Called by LiveView after every DOM patch (highlight layer updated by server)
+  updated() {
     this.syncScroll()
   },
 
   destroyed() {
-    this.unbindEvents()
-    if (this.cursorEl) {
-      this.cursorEl.remove()
-    }
-    if (this.blinkInterval) {
-      clearInterval(this.blinkInterval)
-    }
+    if (this.debounceTimeout) clearTimeout(this.debounceTimeout)
   },
 
-  bindEvents() {
-    this._handleScroll = this.handleScroll.bind(this)
-    this._handleInput = this.handleInput.bind(this)
-    this._handleCursorUpdate = this.handleCursorUpdate.bind(this)
-    this._handleResize = this.handleResize.bind(this)
+  // --- Event handlers ---
 
-    this.textarea.addEventListener('scroll', this._handleScroll)
-    this.textarea.addEventListener('input', this._handleInput)
-    this.textarea.addEventListener('click', this._handleCursorUpdate)
-    this.textarea.addEventListener('keyup', this._handleCursorUpdate)
-    this.textarea.addEventListener('focus', this._handleCursorUpdate)
-    this.textarea.addEventListener('blur', this.handleBlur.bind(this))
-
-    window.addEventListener('resize', this._handleResize)
-
-    if (this.lineNumbers) {
-      this.lineNumbers.addEventListener('scroll', this._handleScroll)
-    }
+  onInput() {
+    this.updateLineNumbers()
+    this.syncScroll()
+    this.scheduleSync()
   },
 
-  unbindEvents() {
-    if (this.textarea) {
-      this.textarea.removeEventListener('scroll', this._handleScroll)
-      this.textarea.removeEventListener('input', this._handleInput)
-      this.textarea.removeEventListener('click', this._handleCursorUpdate)
-      this.textarea.removeEventListener('keyup', this._handleCursorUpdate)
-      this.textarea.removeEventListener('focus', this._handleCursorUpdate)
-      this.textarea.removeEventListener('blur', this._handleBlur)
-    }
-
-    window.removeEventListener('resize', this._handleResize)
-
-    if (this.lineNumbers) {
-      this.lineNumbers.removeEventListener('scroll', this._handleScroll)
-    }
-  },
-
-  setupFakeCursor() {
-    this.cursorEl = document.createElement('div')
-    this.cursorEl.className = 'ex-editor-cursor'
-    this.highlight.appendChild(this.cursorEl)
-    this.startCursorBlink()
-  },
-
-  measureFont() {
-    const computed = window.getComputedStyle(this.textarea)
-    this.lineHeight = parseFloat(computed.lineHeight) || 21
-    this.charWidth = this.measureCharWidth(computed.fontSize)
-  },
-
-  measureCharWidth(fontSize) {
-    const size = parseFloat(fontSize) || 14
-    return size * 0.6
-  },
-
-  handleScroll() {
+  onScroll() {
     this.syncScroll()
   },
 
+  onKeyDown(e) {
+    if (e.key === 'Tab') {
+      e.preventDefault()
+      const start = this.textarea.selectionStart
+      const end = this.textarea.selectionEnd
+      const value = this.textarea.value
+      this.textarea.value = value.substring(0, start) + '  ' + value.substring(end)
+      this.textarea.selectionStart = this.textarea.selectionEnd = start + 2
+      this.updateLineNumbers()
+      this.scheduleSync()
+    }
+  },
+
+  // --- Line numbers ---
+
+  updateLineNumbers() {
+    if (!this.gutter) return
+    const lines = this.textarea.value.split('\n').length
+    if (lines === this.lastLineCount) return
+    this.lastLineCount = lines
+
+    let html = ''
+    for (let i = 1; i <= lines; i++) {
+      html += `<div class="ex-editor-line-number">${i}</div>`
+    }
+    this.gutter.innerHTML = html
+  },
+
+  // --- Scroll sync ---
+
   syncScroll() {
-    const scrollTop = this.textarea.scrollTop
-    const scrollLeft = this.textarea.scrollLeft
-
-    this.highlight.scrollTop = scrollTop
-    this.highlight.scrollLeft = scrollLeft
-
-    if (this.lineNumbers) {
-      this.lineNumbers.scrollTop = scrollTop
-    }
+    const top = this.textarea.scrollTop
+    const left = this.textarea.scrollLeft
+    this.highlight.scrollTop = top
+    this.highlight.scrollLeft = left
+    if (this.gutter) this.gutter.scrollTop = top
   },
 
-  handleInput() {
-    this.updateCursor()
-    this.restartCursorBlink()
-  },
+  // --- Content sync to server (debounced, for syntax highlighting only) ---
 
-  handleCursorUpdate() {
-    this.updateCursor()
-    this.restartCursorBlink()
-  },
-
-  handleBlur() {
-    this.stopCursorBlink()
-  },
-
-  handleResize() {
-    this.measureFont()
-    this.updateCursor()
-  },
-
-  updateCursor() {
-    if (!this.cursorEl) return
-
-    const position = this.textarea.selectionStart
-    const coords = this.getCursorCoords(position)
-
-    this.cursorEl.style.top = `${coords.y}px`
-    this.cursorEl.style.left = `${coords.x}px`
-  },
-
-  getCursorCoords(position) {
-    const content = this.textarea.value.substring(0, position)
-    const lines = content.split('\n')
-    const lineNum = lines.length
-    const colNum = lines[lines.length - 1].length
-
-    const y = (lineNum - 1) * this.lineHeight
-    const x = colNum * this.charWidth
-
-    return { x, y }
-  },
-
-  startCursorBlink() {
-    this.cursorEl.style.opacity = '1'
-    this.blinkInterval = setInterval(() => {
-      const currentOpacity = this.cursorEl.style.opacity
-      this.cursorEl.style.opacity = currentOpacity === '0' ? '1' : '0'
-    }, 530)
-  },
-
-  stopCursorBlink() {
-    if (this.blinkInterval) {
-      clearInterval(this.blinkInterval)
-      this.blinkInterval = null
-    }
-    if (this.cursorEl) {
-      this.cursorEl.style.opacity = '0'
-    }
-  },
-
-  restartCursorBlink() {
-    this.stopCursorBlink()
-    this.startCursorBlink()
+  scheduleSync() {
+    const delay = parseInt(this.el.dataset.debounce) || 300
+    if (this.debounceTimeout) clearTimeout(this.debounceTimeout)
+    this.debounceTimeout = setTimeout(() => {
+      this.pushEventTo(this.el, 'change', { content: this.textarea.value })
+    }, delay)
   }
 }

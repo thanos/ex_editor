@@ -5,6 +5,65 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-04-07
+
+### Added
+
+#### LiveView Component
+- `ExEditorWeb.LiveEditor` LiveComponent for embedding editors in Phoenix LiveView
+- `<.live_editor />` function component with declarative API
+- Double-buffer rendering: invisible textarea + visible highlighted layer
+- Line numbers gutter with VS Code-inspired styling
+- Fake cursor rendering with blink animation
+- Scroll synchronization between layers
+- Debounced content change events
+- Support for `phoenix_live_view` >= 0.19.0 and `phoenix_html` >= 3.0.0
+
+#### Infrastructure
+- `ExEditor.LineNumbers` module for rendering line numbers HTML
+- `ExEditor.HighlightedLines` for wrapping highlighted content line-by-line
+- `lib/ex_editor_web/` directory structure for LiveView integration
+
+#### JavaScript Hook
+- `editor.js` hook (~200 lines) for scroll sync and cursor rendering
+- Cursor position calculation from textarea selectionStart
+- Cursor blink animation with 530ms interval
+- Focus/blur event handling for cursor visibility
+- Resize event handling for font re-measurement
+
+#### CSS Styles
+- Default CSS styles in `lib/ex_editor_web/css/editor.css`
+- Dark and light theme support
+- Read-only mode styling
+- Syntax highlighting classes (VS Code inspired)
+- Scrollbar styling
+- Focus indicator
+- Print styles
+
+#### Documentation
+- `guides/integration.md` with setup instructions and troubleshooting
+- Updated README with LiveEditor component usage
+- Component options table with all configuration options
+
+### Changed
+
+#### API
+- Version bumped to 0.3.0-dev
+- Added `phoenix_live_view` and `phoenix_html` as optional dependencies
+- Added `files` configuration to mix.exs for Hex package
+- Added `groups_for_modules` to docs for better organization
+
+#### Demo Application
+- Updated to use new LiveEditor component
+- Simplified `EditorLive` to use `<.live_editor />` component
+- Updated demo tests for new component architecture
+- Added editor.js hook to demo assets
+- Updated CSS with ExEditor styles
+
+### Fixed
+- Credo warnings: use `Enum.map_join/3`, alias ordering, nested module aliases
+- Demo tests updated for new LiveEditor component
+
 ## [0.2.0] - 2026-04-02
 
 ### Added
@@ -32,37 +91,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed deprecated `:layout` option in Backpex LiveResource usage
 - Fixed demo tests to match actual element IDs
 
-## [Unreleased]
-
-### Added
-- Initial library release with headless architecture
-- Core `ExEditor.Document` module for line-based document management
-- Core `ExEditor.Editor` module for editor state management
-- Plugin system via `ExEditor.Plugin` behavior
-- Comprehensive unit tests (95%+ coverage)
-- Phoenix LiveView demo application
-- VS Code dark theme styling in demo
-- Real-time content synchronization with LiveView
-- JavaScript `EditorSync` hook for cursor tracking
-- Side-by-side editor and raw content view
-- Comprehensive documentation and examples
-- Test coverage with excoveralls
-- Credo and Sobelow for code quality
-- Demo application tests with LiveViewTest
-
-### Changed
-- Reorganized project structure: library at root, demo in `demo/` subdirectory
-- Moved all Phoenix dependencies to demo app only
-- Updated module names from `ExEditorWeb` to `DemoWeb` in demo
-- Removed Phoenix dependencies from library mix.exs
-- Updated formatter configuration to remove Ecto/Phoenix deps from library
-
-### Fixed
-- CSS source path to point to correct `demo_web` directory
-- Demo layout to match screenshot with full-screen dark theme
-- All tests passing (87 library tests + 11 demo tests)
-- No compilation warnings
-
 ## [0.1.0] - 2024-01-08
 
 ### Added
@@ -82,5 +110,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 95%+ test coverage
 - MIT License
 
-[Unreleased]: https://github.com/thanos/ex_editor/compare/v0.1.0...HEAD
+[0.3.0]: https://github.com/thanos/ex_editor/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/thanos/ex_editor/releases/tag/v0.2.0
 [0.1.0]: https://github.com/thanos/ex_editor/releases/tag/v0.1.0

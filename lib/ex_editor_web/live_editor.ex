@@ -2,70 +2,43 @@ defmodule ExEditorWeb.LiveEditor do
   @moduledoc """
   A LiveView component for displaying an editable code editor with syntax highlighting.
 
-  This component implements a "double-buffer" technique where an invisible textarea
-  handles user input while a visible highlighted layer displays the syntax-highlighted
-  code with line numbers and a fake cursor.
+  Uses a "double-buffer" technique: an invisible textarea captures user input
+  while a visible layer renders syntax-highlighted code. The textarea is owned
+  entirely by JavaScript after mount (`phx-update="ignore"`), preventing LiveView
+  from overwriting user input during re-renders.
 
-  ## Basic Usage
+  ## Usage
 
-      <.live_editor
+      <.live_component
+        module={ExEditorWeb.LiveEditor}
         id="my-editor"
         content={@code}
         language={:elixir}
         on_change="code_changed"
       />
 
-  ## With Editor Struct
+  The parent LiveView receives changes via `handle_info/2`:
 
-      <.live_editor
-        id="my-editor"
-        editor={@editor}
-        on_change="editor_changed"
-      />
+      def handle_info({:code_changed, %{content: new_code}}, socket) do
+        {:noreply, assign(socket, :code, new_code)}
+      end
 
   ## Options
 
-    * `:id` - Required. Unique identifier for the editor component.
-    * `:content` - Initial content string (mutually exclusive with `:editor`).
-    * `:editor` - An `ExEditor.Editor` struct (mutually exclusive with `:content`).
-    * `:language` - Language for syntax highlighting. Default: `:elixir`.
-    * `:on_change` - Event name to push when content changes. Default: `"change"`.
-    * `:readonly` - Whether the editor is read-only. Default: `false`.
-    * `:line_numbers` - Whether to show line numbers. Default: `true`.
-    * `:class` - Additional CSS classes for the container.
-    * `:debounce` - Debounce time in milliseconds. Default: `300`.
-    * `:theme` - Editor theme. Default: `"dark"`.
-
-  ## Examples
-
-      defmodule MyAppWeb.EditorLive do
-        use MyAppWeb, :live_view
-
-        def mount(_params, _session, socket) do
-          {:ok, assign(socket, :code, "def hello, do: :world")}
-        end
-
-        def render(assigns) do
-          ~H\"""
-          <ExEditorWeb.LiveEditor.live_editor
-            id="code-editor"
-            content={@code}
-            language={:elixir}
-            on_change="code_changed"
-          />
-          \"""
-        end
-
-        def handle_event("code_changed", %{"content" => new_code}, socket) do
-          {:noreply, assign(socket, :code, new_code)}
-        end
-      end
+    * `:id` - Required. Unique identifier for the editor.
+    * `:content` - Initial content string. Only used on first mount.
+    * `:language` - Language for highlighting. Default: `:elixir`.
+    * `:on_change` - Atom name for parent notification. Default: `"code_changed"`.
+    * `:readonly` - Read-only mode. Default: `false`.
+    * `:line_numbers` - Show line numbers. Default: `true`.
+    * `:class` - Additional CSS classes.
+    * `:debounce` - Debounce in ms. Default: `300`.
   """
 
   use Phoenix.LiveComponent
   import Phoenix.HTML
 
-  alias ExEditor.{Editor, HighlightedLines, LineNumbers}
+  alias ExEditor.{Editor, HighlightedLines}
 
   @languages %{
     elixir: ExEditor.Highlighters.Elixir,
@@ -78,30 +51,36 @@ defmodule ExEditorWeb.LiveEditor do
      socket
      |> assign(:editor, nil)
      |> assign(:language, :elixir)
-     |> assign(:on_change, "change")
+     |> assign(:on_change, "code_changed")
      |> assign(:readonly, false)
      |> assign(:line_numbers, true)
      |> assign(:class, "")
-     |> assign(:debounce, 300)
-     |> assign(:theme, "dark")}
+     |> assign(:debounce, 300)}
   end
 
   @impl true
   def update(assigns, socket) do
-    socket =
-      socket
-      |> assign(assigns)
-      |> maybe_initialize_editor()
+    # Only initialize editor on first update (when editor is nil)
+    if socket.assigns[:editor] == nil do
+      socket =
+        socket
+        |> assign(assigns)
+        |> initialize_editor()
 
-    {:ok, socket}
+      {:ok, socket}
+    else
+      # On subsequent updates, only update non-content assigns
+      # The editor owns its own content state
+      socket =
+        assigns
+        |> Map.drop([:content])
+        |> then(&assign(socket, &1))
+
+      {:ok, socket}
+    end
   end
 
-  defp maybe_initialize_editor(%{assigns: %{editor: %Editor{}}} = socket) do
-    socket
-  end
-
-  defp maybe_initialize_editor(%{assigns: %{content: content}} = socket)
-       when is_binary(content) do
+  defp initialize_editor(%{assigns: %{content: content}} = socket) when is_binary(content) do
     editor =
       Editor.new(content: content)
       |> set_highlighter(socket.assigns.language)
@@ -109,7 +88,7 @@ defmodule ExEditorWeb.LiveEditor do
     assign(socket, :editor, editor)
   end
 
-  defp maybe_initialize_editor(socket) do
+  defp initialize_editor(socket) do
     editor =
       Editor.new(content: "")
       |> set_highlighter(socket.assigns.language)
@@ -131,41 +110,46 @@ defmodule ExEditorWeb.LiveEditor do
       id={@id}
       class={"ex-editor-container #{@class}"}
       phx-hook="EditorHook"
-      data-readonly={to_string(@readonly)}
       data-debounce={to_string(@debounce)}
-      data-on-change={@on_change}
+      phx-target={@myself}
     >
       <div class="ex-editor-wrapper">
         <%= if @line_numbers do %>
-          <div class="ex-editor-line-numbers">
-            <%= raw LineNumbers.render_for_document(@editor.document) %>
+          <%!-- Gutter: owned by JS after mount, LiveView will NOT patch this --%>
+          <div class="ex-editor-gutter" id={"#{@id}-gutter"} phx-update="ignore">
+            <%= for num <- 1..line_count(@editor) do %>
+              <div class="ex-editor-line-number"><%= num %></div>
+            <% end %>
           </div>
         <% end %>
 
-        <pre class="ex-editor-highlight"><%= raw render_highlighted_content(@editor, @line_numbers) %></pre>
+        <div class="ex-editor-code-area">
+          <%!-- Highlighted layer: updated by server on every change --%>
+          <pre class="ex-editor-highlight" id={"#{@id}-highlight"}><%= raw render_highlighted_content(@editor) %></pre>
 
-        <textarea
-          class="ex-editor-textarea"
-          name="content"
-          phx-target={@myself}
-          phx-change="change"
-          phx-debounce={@debounce}
-          readonly={@readonly}
-          spellcheck="false"
-        ><%= Editor.get_content(@editor) %></textarea>
+          <%!-- Textarea: owned by JS after mount, LiveView will NOT patch this --%>
+          <div id={"#{@id}-textarea-wrap"} phx-update="ignore">
+            <textarea
+              id={"#{@id}-textarea"}
+              class="ex-editor-textarea"
+              readonly={@readonly}
+              spellcheck="false"
+            ><%= Editor.get_content(@editor) %></textarea>
+          </div>
+        </div>
       </div>
     </div>
     """
   end
 
-  defp render_highlighted_content(editor, true = _line_numbers) do
-    editor
-    |> Editor.get_highlighted_content()
-    |> HighlightedLines.wrap_lines()
+  defp line_count(editor) do
+    ExEditor.Document.line_count(editor.document)
   end
 
-  defp render_highlighted_content(editor, false = _line_numbers) do
-    Editor.get_highlighted_content(editor)
+  defp render_highlighted_content(editor) do
+    editor
+    |> Editor.get_highlighted_content()
+    |> HighlightedLines.wrap_lines_with_empties()
   end
 
   @impl true
@@ -174,13 +158,12 @@ defmodule ExEditorWeb.LiveEditor do
 
     case Editor.set_content(editor, content) do
       {:ok, updated_editor} ->
-        socket = assign(socket, :editor, updated_editor)
-
+        # Notify parent LiveView
         if on_change = socket.assigns.on_change do
-          send(self(), {String.to_atom(on_change), %{content: content, editor: updated_editor}})
+          send(socket.root_pid, {String.to_atom(on_change), %{content: content}})
         end
 
-        {:noreply, socket}
+        {:noreply, assign(socket, :editor, updated_editor)}
 
       {:error, _reason} ->
         {:noreply, socket}
@@ -189,8 +172,6 @@ defmodule ExEditorWeb.LiveEditor do
 
   @doc """
   Renders a live_editor component.
-
-  This is the function component interface for use in HEEx templates.
 
   ## Examples
 

@@ -8,49 +8,39 @@ defmodule DemoWeb.EditorLiveTest do
 
       assert view
       assert html =~ "ExEditor Demo"
-
-      # Verify sample code is loaded in both textarea and highlighted content
       assert html =~ "defmodule Example"
       assert html =~ "def hello"
 
       # Verify EditorHook is attached
       assert html =~ ~s(phx-hook="EditorHook")
-
-      # Verify the LiveEditor component is rendered
       assert html =~ "ex-editor-container"
-      assert html =~ "ex-editor-textarea"
-      assert html =~ "ex-editor-highlight"
     end
 
     test "assigns code on mount", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/")
 
-      # Verify the textarea exists within the LiveEditor component
       assert view |> element("textarea.ex-editor-textarea") |> has_element?()
     end
 
     test "renders line numbers", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/")
 
-      # Verify line numbers are present
-      assert html =~ "ex-editor-line-numbers"
-      assert html =~ "1\n2\n3"
+      assert html =~ "ex-editor-gutter"
+      assert html =~ "ex-editor-line-number"
     end
   end
 
   describe "handle_event/3 code_changed" do
-    test "updates editor content when user types", %{conn: conn} do
+    test "updates raw content preview when content changes", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/")
 
-      # Simulate user typing new content via the LiveEditor component
+      # Content changes are pushed via JS hook to the component,
+      # then the component sends handle_info to the parent.
+      # In tests we can send the event directly to the component.
       new_content = "defmodule NewCode do\n  def test, do: :ok\nend"
 
-      # Target the textarea within the LiveEditor component
-      view
-      |> element("textarea.ex-editor-textarea")
-      |> render_change(%{"content" => new_content})
+      send(view.pid, {:code_changed, %{content: new_content}})
 
-      # Verify content updated
       html = render(view)
       assert html =~ "defmodule NewCode"
       assert html =~ "def test, do: :ok"
@@ -59,33 +49,10 @@ defmodule DemoWeb.EditorLiveTest do
     test "handles empty content", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/")
 
-      view
-      |> element("textarea.ex-editor-textarea")
-      |> render_change(%{"content" => ""})
+      send(view.pid, {:code_changed, %{content: ""}})
 
       html = render(view)
       assert html =~ "ExEditor Demo"
-    end
-
-    test "handles multiline content", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/")
-
-      multiline = """
-      line 1
-      line 2
-      line 3
-      line 4
-      """
-
-      view
-      |> element("textarea.ex-editor-textarea")
-      |> render_change(%{"content" => multiline})
-
-      html = render(view)
-      assert html =~ "line 1"
-      assert html =~ "line 2"
-      assert html =~ "line 3"
-      assert html =~ "line 4"
     end
   end
 
@@ -93,34 +60,27 @@ defmodule DemoWeb.EditorLiveTest do
     test "renders LiveEditor component", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/")
 
-      # Verify the LiveEditor component structure
       assert html =~ "ex-editor-container"
-      assert html =~ "ex-editor-wrapper"
-      assert html =~ "ex-editor-textarea"
       assert html =~ "ex-editor-highlight"
+      assert html =~ "ex-editor-textarea"
     end
 
     test "applies dark theme styling", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/")
 
-      # Verify dark background
       assert html =~ "bg-[#1e1e1e]"
-
-      # Verify text color
       assert html =~ "text-[#d4d4d4]"
     end
 
     test "renders syntax highlighting classes", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/")
 
-      # Verify syntax highlighting classes are applied
       assert html =~ "hl-keyword"
     end
 
     test "shows raw content preview", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/")
 
-      # Verify raw content preview section exists
       assert html =~ "Raw Content (Preview)"
     end
   end

@@ -31,7 +31,7 @@ defmodule DemoWeb.EditorLive do
   end
 
   @impl true
-  def handle_event("code_changed", %{"content" => new_code}, socket) do
+  def handle_info({:code_changed, %{content: new_code}}, socket) do
     {:noreply, assign(socket, :code, new_code)}
   end
 
@@ -54,7 +54,7 @@ defmodule DemoWeb.EditorLive do
             content={@code}
             language={:elixir}
             on_change="code_changed"
-            debounce={300}
+            debounce={500}
           />
         </div>
 

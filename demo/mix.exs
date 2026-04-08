@@ -34,6 +34,8 @@ defmodule Demo.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:tidewave, "~> 0.5", only: [:dev]},
+      {:igniter, "~> 0.6", only: [:dev, :test]},
       {:ex_editor, path: ".."},
       {:phoenix, "~> 1.8.1", override: true},
       {:phoenix_ecto, "~> 4.7"},
