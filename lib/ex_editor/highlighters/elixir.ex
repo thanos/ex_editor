@@ -62,9 +62,11 @@ defmodule ExEditor.Highlighters.Elixir do
   end
 
   # Heredoc strings (triple quotes)
+  # Note: the pattern consumes the \n after the closing """, so we add it back
+  # to the token value to preserve correct line count in the highlighted output.
   defp do_tokenize(<<"\"\"\"\n", rest::binary>>, acc) do
     {string, remainder} = extract_heredoc(rest, "")
-    do_tokenize(remainder, [{:string, ~s("""\n#{string}""")} | acc])
+    do_tokenize(remainder, [{:string, ~s("""\n#{string}"""\n)} | acc])
   end
 
   # Double quoted strings
@@ -351,8 +353,15 @@ defmodule ExEditor.Highlighters.Elixir do
   defp format_token({:keyword, value}), do: ~s(<span class="hl-keyword">#{value}</span>)
   defp format_token({:atom, value}), do: ~s(<span class="hl-key">#{escape_html(value)}</span>)
 
-  defp format_token({:string, value}),
-    do: ~s(<span class="hl-string">#{escape_html(value)}</span>)
+  defp format_token({:string, value}) do
+    # Split multi-line strings (heredocs) line-by-line so that \n chars
+    # are never inside a <span>. This keeps the HTML well-formed when
+    # HighlightedLines wraps each line in a <div>.
+    value
+    |> escape_html()
+    |> String.split("\n")
+    |> Enum.map_join("\n", fn line -> ~s(<span class="hl-string">#{line}</span>) end)
+  end
 
   defp format_token({:module, value}), do: ~s(<span class="hl-module">#{value}</span>)
 
