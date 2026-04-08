@@ -62,8 +62,18 @@
   overflow: hidden;
 }
 
+/* While typing: show plain textarea text instantly, hide stale highlight */
+.ex-editor-container.typing .ex-editor-highlight {
+  opacity: 0;
+}
+
+.ex-editor-container.typing .ex-editor-textarea {
+  -webkit-text-fill-color: #d4d4d4;
+}
+
 /* Highlighted layer: visible, server-rendered syntax highlighting */
 .ex-editor-highlight {
+  transition: opacity 0.08s ease-in;
   position: absolute;
   top: 0;
   left: 0;

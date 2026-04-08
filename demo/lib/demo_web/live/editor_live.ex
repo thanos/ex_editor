@@ -54,7 +54,7 @@ defmodule DemoWeb.EditorLive do
             content={@code}
             language={:elixir}
             on_change="code_changed"
-            debounce={500}
+            debounce={2000}
           />
         </div>
 
