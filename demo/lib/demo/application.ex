@@ -33,19 +33,16 @@ defmodule Demo.Application do
   end
 
   defp repo_children do
+    [Demo.Repo] ++ migration_children()
+  end
+
+  defp migration_children do
     if System.get_env("SKIP_MIGRATIONS") == "true" do
       []
     else
-      [
-        Demo.Repo,
-        {Ecto.Migrator,
-         repos: Application.fetch_env!(:demo, :ecto_repos), skip: skip_migrations?()}
-      ]
+      [{Ecto.Migrator,
+        repos: Application.fetch_env!(:demo, :ecto_repos),
+        skip: System.get_env("RELEASE_NAME") == nil}]
     end
-  end
-
-  defp skip_migrations?() do
-    # By default, sqlite migrations are run when using a release
-    System.get_env("RELEASE_NAME") == nil
   end
 end
