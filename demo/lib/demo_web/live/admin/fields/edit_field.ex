@@ -88,11 +88,23 @@ defmodule DemoWeb.Admin.Fields.EditField do
           data-field-id={@form[@name].id}
         />
 
-        <Backpex.Field.help_text text={Backpex.Field.help_text(@field_options, assigns)} />
-        <Backpex.Field.error
-          translate_error_fun={Backpex.Field.translate_error_fun(@field_options, assigns)}
-          errors={@form[@name].errors}
-        />
+        <!-- Help text -->
+        <%= if help_text = Backpex.Field.help_text(@field_options, assigns) do %>
+          <p class="text-sm text-gray-500 mt-1"><%= help_text %></p>
+        <% end %>
+
+        <!-- Field errors -->
+        <%= if Enum.any?(@form[@name].errors) do %>
+          <div class="text-sm text-red-600 mt-1">
+            <%= Backpex.Field.translate_errors(
+              @form[@name].errors,
+              Backpex.Field.translate_error_fun(@field_options, assigns)
+            )
+            |> Enum.map(&("• #{&1}"))
+            |> Enum.join("<br>")
+            |> raw() %>
+          </div>
+        <% end %>
       </Layout.field_container>
     </div>
     """
