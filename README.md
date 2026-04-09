@@ -13,7 +13,8 @@ A headless code editor library for Phoenix LiveView applications with a plugin s
 
 - **Headless Architecture** - Core editing logic separate from UI concerns
 - **LiveView Component** - Ready-to-use `<.live_editor />` component with syntax highlighting
-- **Instant Visual Feedback** - Plain text visible immediately while typing, syntax highlighting fades in after 2 seconds of inactivity
+- **Responsive Highlighting** - Syntax highlighting always visible and updates within ~50ms
+- **Incremental Diffs** - Send only changed content (4-6x smaller payloads) instead of full text
 - **Native Caret** - Uses browser's native cursor instead of overlay (no disappearing cursor)
 - **Line Numbers** - JS-managed line number gutter that updates instantly without server round-trip
 - **Double-Buffer Rendering** - Invisible textarea with visible highlighted layer for seamless editing
@@ -22,7 +23,7 @@ A headless code editor library for Phoenix LiveView applications with a plugin s
 - **Plugin System** - Extend functionality through a simple behavior-based plugin API
 - **Undo/Redo Support** - Built-in history management with configurable stack size
 - **Syntax Highlighting** - Built-in highlighters for Elixir and JSON, easily extensible
-- **Comprehensive Testing** - 267 tests, 88.7% coverage with full LiveComponent integration tests
+- **Comprehensive Testing** - 285 tests, 88.7%+ coverage with full LiveComponent integration tests
 
 ## Installation
 
