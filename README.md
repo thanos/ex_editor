@@ -12,13 +12,18 @@ A headless code editor library for Phoenix LiveView applications with a plugin s
 ## Features
 
 - **Headless Architecture** - Core editing logic separate from UI concerns
+- **LiveView Component** - Ready-to-use `<.live_editor />` component with syntax highlighting
+- **Responsive Highlighting** - Syntax highlighting always visible and updates within ~50ms
+- **Incremental Diffs** - Send only changed content (4-6x smaller payloads) instead of full text
+- **Native Caret** - Uses browser's native cursor instead of overlay (no disappearing cursor)
+- **Line Numbers** - JS-managed line number gutter that updates instantly without server round-trip
+- **Double-Buffer Rendering** - Invisible textarea with visible highlighted layer for seamless editing
+- **Scroll Synchronization** - Textarea, highlight layer, and gutter stay perfectly aligned during scrolling
 - **Line-Based Document Model** - Efficient text manipulation with line operations
 - **Plugin System** - Extend functionality through a simple behavior-based plugin API
 - **Undo/Redo Support** - Built-in history management with configurable stack size
-- **Syntax Highlighting** - Optional highlighters for Elixir, JSON, and custom languages
-- **LiveView Ready** - Designed for real-time collaborative editing
-- **Battle-Tested** - 95%+ test coverage with comprehensive unit tests
-- **Zero Runtime Dependencies** - Pure Elixir library with no external runtime deps
+- **Syntax Highlighting** - Built-in highlighters for Elixir and JSON, easily extensible
+- **Comprehensive Testing** - 285 tests, 88.7%+ coverage with full LiveComponent integration tests
 
 ## Installation
 
@@ -29,7 +34,7 @@ Add `ex_editor` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ex_editor, "~> 0.2.0"}
+    {:ex_editor, "~> 0.3.0"}
   ]
 end
 ```
@@ -51,6 +56,195 @@ mix deps.get
 ```
 
 ## Quick Start
+
+### Phoenix LiveView Integration
+
+Add the JavaScript hook to your `assets/js/app.js`:
+
+```javascript
+import EditorHook from "ex_editor/hooks/editor"
+
+let liveSocket = new LiveSocket("/live", Socket, {
+  hooks: { EditorHook }
+})
+```
+
+Import the CSS in your `assets/css/app.css`:
+
+```css
+@import "ex_editor/css/editor";
+```
+
+Use the component in your LiveView:
+
+```elixir
+defmodule MyAppWeb.EditorLive do
+  use MyAppWeb, :live_view
+
+  def mount(_params, _session, socket) do
+    {:ok, assign(socket, :code, "def hello, do: :world")}
+  end
+
+  def render(assigns) do
+    ~H"""
+    <ExEditorWeb.LiveEditor.live_editor
+      id="code-editor"
+      content={@code}
+      language={:elixir}
+      on_change="code_changed"
+    />
+    """
+  end
+
+  def handle_event("code_changed", %{"content" => new_code}, socket) do
+    {:noreply, assign(socket, :code, new_code)}
+  end
+end
+```
+
+### Component Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `:id` | `string` | required | Unique identifier for the editor |
+| `:content` | `string` | `""` | Initial content string |
+| `:editor` | `Editor.t()` | - | Pre-existing Editor struct |
+| `:language` | `atom` | `:elixir` | Syntax highlighting language |
+| `:on_change` | `string` | `"change"` | Event name for content changes |
+| `:readonly` | `boolean` | `false` | Read-only mode |
+| `:line_numbers` | `boolean` | `true` | Show/hide line numbers |
+| `:class` | `string` | `""` | Additional CSS classes |
+| `:debounce` | `integer` | `300` | Debounce time in milliseconds |
+
+### Supported Languages
+
+Built-in highlighters:
+
+- `:elixir` - Elixir syntax
+- `:json` - JSON syntax
+
+## Backpex Integration
+
+ExEditor integrates seamlessly with [Backpex](https://hexdocs.pm/backpex) admin panels as a custom field for code editing.
+
+### Setup
+
+1. Create a custom field module in your Backpex resource:
+
+```elixir
+defmodule MyAppWeb.Admin.Fields.CodeEditor do
+  use Backpex.Field, config_schema: []
+
+  @impl Backpex.Field
+  def render_value(assigns) do
+    field_value = Map.get(assigns.item, assigns.name)
+
+    ~H"""
+    <div class="border border-gray-300 rounded-lg overflow-hidden bg-slate-900">
+      <div class="ex-editor-wrapper" style="display: flex;">
+        <div class="ex-editor-gutter">
+          <%= for num <- 1..line_count(field_value) do %>
+            <div class="ex-editor-line-number"><%= num %></div>
+          <% end %>
+        </div>
+        <div class="ex-editor-code-area">
+          <pre class="ex-editor-highlight"><%= raw highlight_code(field_value) %></pre>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @impl Backpex.Field
+  def render_form(assigns) do
+    field_value = assigns.form[assigns.name]
+    content = field_value && field_value.value || ""
+    assigns = assign(assigns, :content, content)
+
+    ~H"""
+    <div>
+      <Layout.field_container>
+        <:label align={Backpex.Field.align_label(@field_options, assigns, :top)}>
+          <Layout.input_label for={@form[@name]} text={@field_options[:label]} />
+        </:label>
+
+        <div class="border border-gray-300 rounded-lg overflow-hidden mb-2 h-96">
+          <.live_component
+            module={ExEditorWeb.LiveEditor}
+            id={"editor_#{@name}"}
+            content={@content}
+            language={:elixir}
+            debounce={100}
+            readonly={@readonly}
+          />
+        </div>
+
+        <input
+          type="hidden"
+          name={@form[@name].name}
+          value={@content}
+          id={"#{@form[@name].id}_editor_sync"}
+          phx-hook="EditorFormSync"
+          data-field-id={@form[@name].id}
+        />
+
+        <%= if help_text = Backpex.Field.help_text(@field_options, assigns) do %>
+          <p class="text-sm text-gray-500 mt-1"><%= help_text %></p>
+        <% end %>
+      </Layout.field_container>
+    </div>
+    """
+  end
+
+  defp line_count(nil), do: 1
+  defp line_count(content) when is_binary(content) do
+    content |> String.split("\n") |> length()
+  end
+
+  defp highlight_code(nil), do: ""
+  defp highlight_code(content) do
+    editor = ExEditor.Editor.new(content: content)
+    editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
+    ExEditor.Editor.get_highlighted_content(editor)
+  end
+end
+```
+
+2. Register the field in your Backpex resource:
+
+```elixir
+def fields do
+  [
+    name: %{module: Backpex.Fields.Text, label: "Name"},
+    code: %{
+      module: MyAppWeb.Admin.Fields.CodeEditor,
+      label: "Code",
+      help_text: "Enter your code here"
+    }
+  ]
+end
+```
+
+3. Add the EditorFormSync hook to your `assets/js/app.js`:
+
+```javascript
+import EditorFormSync from "./hooks/editor_form_sync.js"
+
+let liveSocket = new LiveSocket("/live", Socket, {
+  hooks: { EditorHook, EditorFormSync }
+})
+```
+
+### Features
+
+- **Full syntax highlighting** in both edit and view modes
+- **Line numbers** displayed with code (with instant updates while editing)
+- **Real-time form synchronization** - changes are automatically synced to the form
+- **Readonly display** - code is syntax-highlighted with line numbers on the show page
+- **Responsive** - editor adapts to container size
+- **Configurable** - debounce, language, and styling options
+
+## Core Editor API
 
 ### Basic Usage
 
@@ -142,40 +336,44 @@ editor = ExEditor.Editor.new(
 | `:handle_change` | `{old_content, new_content}` | React to changes |
 | Custom | Any | Application-defined |
 
-### Plugin Metadata
+## Syntax Highlighting
 
-Plugins can store state in editor metadata:
+ExEditor includes optional syntax highlighters:
+
+- `ExEditor.Highlighters.Elixir` - Highlights Elixir code
+- `ExEditor.Highlighters.JSON` - Highlights JSON data
 
 ```elixir
-def on_event(:handle_change, {_old, new}, editor) do
-  {:ok, ExEditor.Editor.put_metadata(editor, :my_plugin, %{last_saved: new})}
-end
+editor = ExEditor.Editor.new(content: "def hello, do: :world")
+editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
+ExEditor.Editor.get_highlighted_content(editor)
+# => "<span class=\"hl-keyword\">def</span> ..."
 ```
 
-## Phoenix LiveView Integration
-
-See the included demo application in `demo/` for a complete example of integrating ExEditor with Phoenix LiveView.
-
-**[Live Demo](https://ex-editor.fly.dev)**
-
-The demo showcases:
-- Real-time content synchronization
-- Cursor position tracking
-- VS Code-inspired dark theme
-- Elixir syntax highlighting
-- JavaScript hooks for advanced features
-
-To run the demo locally:
-
-```bash
-cd demo
-mix setup
-mix phx.server
-```
-
-Then visit [http://localhost:4000](http://localhost:4000)
+Create custom highlighters by implementing the `ExEditor.Highlighter` behaviour.
 
 ## Architecture
+
+### Double-Buffer Rendering
+
+The LiveEditor component uses a "double-buffer" technique:
+
+```
+┌─────────────────────────────────────┐
+│  Container (relative positioned)    │
+│  ┌───────────────────────────────┐  │
+│  │ Highlighted Layer (visible)   │  │  Syntax-highlighted code
+│  │   - Line numbers              │  │  with fake cursor
+│  │   - Fake cursor               │  │
+│  └───────────────────────────────┘  │
+│  ┌───────────────────────────────┐  │
+│  │ Textarea Layer (invisible)    │  │  Captures user input
+│  │   - color: transparent        │  │
+│  └───────────────────────────────┘  │
+└─────────────────────────────────────┘
+```
+
+Both layers share identical styling for perfect sync.
 
 ### Document Model
 
@@ -196,47 +394,31 @@ The `ExEditor.Editor` module manages editor state:
 - Provides undo/redo with configurable history size
 - Provides a simple API for UI integration
 
-### Plugin System
+## Demo Application
 
-Plugins implement the `ExEditor.Plugin` behaviour:
+See the included demo application in `demo/` for a complete example.
 
-```elixir
-@callback on_event(event :: atom(), payload :: term(), editor :: Editor.t()) ::
-  {:ok, Editor.t()} | {:error, term()}
+**[Live Demo](https://ex-editor.fly.dev)**
+
+To run the demo locally:
+
+```bash
+cd demo
+mix setup
+mix phx.server
 ```
 
-Plugins receive events for:
-- `:before_change` - Before content changes (can reject)
-- `:handle_change` - After content has changed
-- Custom events via `Editor.notify/3`
-
-## Syntax Highlighting
-
-ExEditor includes optional syntax highlighters:
-
-- `ExEditor.Highlighters.Elixir` - Highlights Elixir code
-- `ExEditor.Highlighters.JSON` - Highlights JSON data
-
-```elixir
-editor = ExEditor.Editor.new(content: "def hello, do: :world")
-editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
-ExEditor.Editor.get_highlighted_content(editor)
-# => "<span class=\"hl-keyword\">def</span> ..."
-```
-
-Create custom highlighters by implementing the `highlight/1` callback.
+Then visit [http://localhost:4000](http://localhost:4000)
 
 ## API Documentation
 
 Full API documentation is available on [HexDocs](https://hexdocs.pm/ex_editor).
 
-You can also generate docs locally:
+Generate docs locally:
 
 ```bash
 mix docs
 ```
-
-Then open `doc/index.html` in your browser.
 
 ## Development
 

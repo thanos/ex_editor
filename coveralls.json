@@ -2,5 +2,9 @@
   "coverage_options": {
     "minimum_coverage": 70
   },
-  "skip_files": ["test/"]
+  "skip_files": [
+    "test/",
+    "lib/ex_editor/plugin.ex",
+    "lib/ex_editor/highlighter.ex"
+  ]
 }

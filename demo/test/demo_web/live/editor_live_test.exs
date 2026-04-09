@@ -6,42 +6,41 @@ defmodule DemoWeb.EditorLiveTest do
     test "initializes with sample Elixir code", %{conn: conn} do
       {:ok, view, html} = live(conn, "/")
 
-      # Verify the view mounted successfully
       assert view
       assert html =~ "ExEditor Demo"
-
-      # Verify sample code is loaded
       assert html =~ "defmodule Example"
       assert html =~ "def hello"
 
-      # Verify cursor position badge is rendered
-      assert html =~ "Ln 1, Col 1"
-
-      # Verify EditorSync hook is attached
-      assert html =~ "phx-hook=\"EditorSync\""
+      # Verify EditorHook is attached
+      assert html =~ ~s(phx-hook="EditorHook")
+      assert html =~ "ex-editor-container"
     end
 
-    test "assigns editor and content on mount", %{conn: conn} do
+    test "assigns code on mount", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/")
 
-      # Check assigns are set correctly
-      assert view |> element("textarea[name='content']") |> has_element?()
-      assert view |> element("#editor-textarea") |> has_element?()
+      assert view |> element("textarea.ex-editor-textarea") |> has_element?()
+    end
+
+    test "renders line numbers", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/")
+
+      assert html =~ "ex-editor-gutter"
+      assert html =~ "ex-editor-line-number"
     end
   end
 
-  describe "handle_event/3 update_content" do
-    test "updates editor content when user types", %{conn: conn} do
+  describe "handle_event/3 code_changed" do
+    test "updates raw content preview when content changes", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/")
 
-      # Simulate user typing new content
+      # Content changes are pushed via JS hook to the component,
+      # then the component sends handle_info to the parent.
+      # In tests we can send the event directly to the component.
       new_content = "defmodule NewCode do\n  def test, do: :ok\nend"
 
-      view
-      |> element("form")
-      |> render_change(%{"content" => new_content})
+      send(view.pid, {:code_changed, %{content: new_content}})
 
-      # Verify content updated in the view
       html = render(view)
       assert html =~ "defmodule NewCode"
       assert html =~ "def test, do: :ok"
@@ -50,193 +49,39 @@ defmodule DemoWeb.EditorLiveTest do
     test "handles empty content", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/")
 
-      view
-      |> element("form")
-      |> render_change(%{"content" => ""})
+      send(view.pid, {:code_changed, %{content: ""}})
 
-      # Should handle empty content gracefully
       html = render(view)
       assert html =~ "ExEditor Demo"
-    end
-
-    test "handles multiline content", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/")
-
-      multiline = """
-      line 1
-      line 2
-      line 3
-      line 4
-      """
-
-      view
-      |> element("form")
-      |> render_change(%{"content" => multiline})
-
-      html = render(view)
-      assert html =~ "line 1"
-      assert html =~ "line 2"
-      assert html =~ "line 3"
-      assert html =~ "line 4"
-    end
-  end
-
-  describe "handle_event/3 update_cursor" do
-    test "updates cursor position when user moves cursor", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/")
-
-      # Simulate cursor movement
-      view
-      |> render_hook("update_cursor", %{
-        "line" => 5,
-        "col" => 10
-      })
-
-      # Verify cursor position updated
-      html = render(view)
-      assert html =~ "Ln 5, Col 10"
-    end
-
-    test "handles cursor at line 1, col 1", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/")
-
-      view
-      |> render_hook("update_cursor", %{
-        "line" => 1,
-        "col" => 1
-      })
-
-      html = render(view)
-      assert html =~ "Ln 1, Col 1"
-    end
-
-    test "handles large line numbers", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/")
-
-      view
-      |> render_hook("update_cursor", %{
-        "line" => 999,
-        "col" => 50
-      })
-
-      html = render(view)
-      assert html =~ "Ln 999, Col 50"
-    end
-
-    test "handles selection_start and selection_end parameters from JS hook", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/")
-
-      # This is the bug fix test - the JS hook sends selection_start/selection_end
-      # instead of line/col, which was causing GenServer crashes
-      view
-      |> render_hook("update_cursor", %{
-        "selection_start" => 0,
-        "selection_end" => 0
-      })
-
-      # Should update cursor to line 1, col 1 for position 0
-      html = render(view)
-      assert html =~ "Ln 1, Col 1"
-    end
-
-    test "calculates correct cursor position from selection_start for multiline content", %{
-      conn: conn
-    } do
-      {:ok, view, _html} = live(conn, "/")
-
-      # Set multiline content first
-      content = "line 1\nline 2\nline 3"
-
-      view
-      |> element("form")
-      |> render_change(%{"content" => content})
-
-      # Position 7 should be start of line 2 (after "line 1\n")
-      view
-      |> render_hook("update_cursor", %{
-        "selection_start" => 7,
-        "selection_end" => 7
-      })
-
-      html = render(view)
-      assert html =~ "Ln 2, Col 1"
-    end
-
-    test "calculates correct cursor position mid-line", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/")
-
-      # Set content
-      content = "Hello World\nSecond Line"
-
-      view
-      |> element("form")
-      |> render_change(%{"content" => content})
-
-      # Position 6 should be in middle of "Hello World" (after "Hello ")
-      view
-      |> render_hook("update_cursor", %{
-        "selection_start" => 6,
-        "selection_end" => 6
-      })
-
-      html = render(view)
-      assert html =~ "Ln 1, Col 7"
-    end
-
-    test "does not crash with selection at end of content", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/")
-
-      content = "Short text"
-
-      view
-      |> element("form")
-      |> render_change(%{"content" => content})
-
-      # Position at end of content (length = 10)
-      view
-      |> render_hook("update_cursor", %{
-        "selection_start" => 10,
-        "selection_end" => 10
-      })
-
-      # Should not crash and should update cursor
-      html = render(view)
-      assert html =~ "Ln 1"
     end
   end
 
   describe "render/1" do
-    test "renders side-by-side editor layout", %{conn: conn} do
+    test "renders LiveEditor component", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/")
 
-      # Verify grid layout
-      assert html =~ "grid grid-cols-1 lg:grid-cols-2"
-
-      # Verify textarea editor
-      assert html =~ "<textarea"
-      assert html =~ "name=\"content\""
-      assert html =~ "phx-change=\"update_content\""
-
-      # Verify editor textarea
-      assert html =~ "id=\"editor-textarea\""
+      assert html =~ "ex-editor-container"
+      assert html =~ "ex-editor-highlight"
+      assert html =~ "ex-editor-textarea"
     end
 
     test "applies dark theme styling", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/")
 
-      # Verify dark background
       assert html =~ "bg-[#1e1e1e]"
-
-      # Verify text color
       assert html =~ "text-[#d4d4d4]"
     end
 
-    test "renders cursor position badge", %{conn: conn} do
+    test "renders syntax highlighting classes", %{conn: conn} do
       {:ok, _view, html} = live(conn, "/")
 
-      assert html =~ "cursor-position"
-      assert html =~ "Ln"
-      assert html =~ "Col"
+      assert html =~ "hl-keyword"
+    end
+
+    test "shows raw content preview", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/")
+
+      assert html =~ "Raw Content (Preview)"
     end
   end
 end

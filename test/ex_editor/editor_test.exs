@@ -329,6 +329,59 @@ defmodule ExEditor.EditorTest do
       assert Editor.get_metadata(editor, :transformed) == "TEST_VALUE_transformed"
     end
   end
+
+  describe "apply_diff/4" do
+    test "inserts text at position" do
+      assert {:ok, "hallo"} = Editor.apply_diff("hllo", 1, 1, "a")
+    end
+
+    test "deletes text by replacement with empty string" do
+      assert {:ok, "helo"} = Editor.apply_diff("hello", 3, 4, "")
+    end
+
+    test "replaces range of text" do
+      assert {:ok, "hello world"} = Editor.apply_diff("hello there", 6, 11, "world")
+    end
+
+    test "inserts at start" do
+      assert {:ok, "prefix_hello"} = Editor.apply_diff("hello", 0, 0, "prefix_")
+    end
+
+    test "appends at end" do
+      assert {:ok, "hello_suffix"} = Editor.apply_diff("hello", 5, 5, "_suffix")
+    end
+
+    test "returns error for negative from position" do
+      assert {:error, :out_of_bounds} = Editor.apply_diff("hello", -1, 2, "x")
+    end
+
+    test "returns error when to < from" do
+      assert {:error, :out_of_bounds} = Editor.apply_diff("hello", 3, 1, "x")
+    end
+
+    test "returns error when to exceeds content length" do
+      assert {:error, :out_of_bounds} = Editor.apply_diff("hello", 0, 10, "x")
+    end
+
+    test "returns error when from exceeds content length" do
+      assert {:error, :out_of_bounds} = Editor.apply_diff("hello", 10, 11, "x")
+    end
+
+    test "handles unicode characters" do
+      # Elixir String.length counts codepoints, not bytes
+      assert {:ok, "héllo"} = Editor.apply_diff("hllo", 1, 1, "é")
+    end
+
+    test "handles empty string content" do
+      assert {:ok, "hello"} = Editor.apply_diff("", 0, 0, "hello")
+    end
+
+    test "handles large replacements" do
+      long_text = String.duplicate("x", 1000)
+      result = Editor.apply_diff("hello world", 0, 11, long_text)
+      assert {:ok, ^long_text} = result
+    end
+  end
 end
 
 defmodule TestPlugins.MyPlugin do

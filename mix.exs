@@ -1,7 +1,7 @@
 defmodule ExEditor.MixProject do
   use Mix.Project
 
-  @version "0.2.0-rc.1"
+  @version "0.3.0"
   @source_url "https://github.com/thanos/ex_editor"
 
   def project do
@@ -45,6 +45,9 @@ defmodule ExEditor.MixProject do
 
   defp deps do
     [
+      {:phoenix_live_view, ">= 0.19.0", optional: true},
+      {:phoenix_html, ">= 3.0.0", optional: true},
+      {:phoenix_test, "~> 0.2", only: :test},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
@@ -61,7 +64,10 @@ defmodule ExEditor.MixProject do
     [
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
-      maintainers: ["Thanos Vassilakis"]
+      maintainers: ["Thanos Vassilakis"],
+      files:
+        ~w(lib/ex_editor lib/ex_editor_web lib/ex_editor.ex lib/ex_editor_web.ex priv) ++
+          ~w(CHANGELOG.md LICENSE README.md mix.exs)
     ]
   end
 
@@ -71,7 +77,15 @@ defmodule ExEditor.MixProject do
       extras: [
         "README.md",
         "CHANGELOG.md",
-        "guides/plugins.md"
+        "guides/plugins.md",
+        "guides/integration.md"
+      ],
+      groups_for_modules: [
+        "Editor Core": [ExEditor, ExEditor.Editor, ExEditor.Document, ExEditor.History],
+        Plugins: [ExEditor.Plugin],
+        Highlighters: [ExEditor.Highlighter, ExEditor.Highlighters],
+        "Web Components": [ExEditorWeb, ExEditorWeb.LiveEditor],
+        Utilities: [ExEditor.LineNumbers, ExEditor.HighlightedLines]
       ]
     ]
   end

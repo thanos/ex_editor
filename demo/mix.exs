@@ -11,7 +11,18 @@ defmodule Demo.MixProject do
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ],
+      dialyzer: [
+        plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
+        plt_add_apps: [:mix, :ex_unit]
+      ]
     ]
   end
 
@@ -34,6 +45,8 @@ defmodule Demo.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:tidewave, "~> 0.5", only: [:dev]},
+      {:igniter, "~> 0.6", only: [:dev, :test]},
       {:ex_editor, path: ".."},
       {:phoenix, "~> 1.8.1", override: true},
       {:phoenix_ecto, "~> 4.7"},
@@ -59,7 +72,11 @@ defmodule Demo.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.8"}
+      {:bandit, "~> 1.8"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
+      {:excoveralls, "~> 0.18", only: :test},
+      {:dialyxir, "~> 1.4", only: :dev, runtime: false}
     ]
   end
 
@@ -81,7 +98,35 @@ defmodule Demo.MixProject do
         "tailwind demo --minify",
         "esbuild demo --minify",
         "phx.digest"
-      ]
+      ],
+      verify: &verify/1
     ]
+  end
+
+  defp verify(_) do
+    steps = [
+      {"compile --warnings-as-errors", :dev},
+      {"format --check-formatted", :dev},
+      {"credo --strict", :dev},
+      {"sobelow --config", :dev},
+      # {"dialyzer", :dev},
+      {"test --cover", :test}
+    ]
+
+    Enum.each(steps, fn {task, env} ->
+      Mix.shell().info([:bright, "==> mix #{task}", :reset])
+
+      {_, exit_code} =
+        System.cmd("mix", String.split(task),
+          env: [{"MIX_ENV", to_string(env)}],
+          into: IO.stream()
+        )
+
+      if exit_code != 0 do
+        Mix.raise("mix #{task} failed (exit code #{exit_code})")
+      end
+    end)
+
+    Mix.shell().info([:green, :bright, "\nAll verification checks passed!", :reset])
   end
 end

@@ -26,6 +26,10 @@ defmodule DemoWeb.Endpoint do
     gzip: Mix.env() == :prod,
     only: DemoWeb.static_paths()
 
+  if Mix.env() == :dev do
+    plug Tidewave
+  end
+
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do

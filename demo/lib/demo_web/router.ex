@@ -3,39 +3,37 @@ defmodule DemoWeb.Router do
   import Backpex.Router
 
   pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_live_flash
-    plug :put_root_layout, html: {DemoWeb.Layouts, :root}
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_live_flash)
+    plug(:put_root_layout, html: {DemoWeb.Layouts, :root})
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
   end
 
   pipeline :api do
-    plug :accepts, ["json"]
+    plug(:accepts, ["json"])
   end
 
   scope "/", DemoWeb do
-    pipe_through :browser
+    pipe_through(:browser)
 
-    live "/", EditorLive
+    live("/", EditorLive)
   end
 
-  scope "/admin", DemoWeb.Admin, as: :admin do
-    pipe_through :browser
-    backpex_routes()
+  # Admin routes only available when database is configured
+  if System.get_env("SKIP_MIGRATIONS") != "true" do
+    scope "/admin", DemoWeb.Admin, as: :admin do
+      pipe_through(:browser)
+      backpex_routes()
 
-    get "/", RedirectController, :redirect_to_snippets
+      get("/", RedirectController, :redirect_to_snippets)
 
-    live_session :backpex, on_mount: Backpex.InitAssigns do
-      live_resources "/code_snippets", CodeSnippetLive
+      live_session :backpex, on_mount: Backpex.InitAssigns do
+        live_resources("/code_snippets", CodeSnippetLive)
+      end
     end
   end
-
-  # Other scopes may use custom stacks.
-  # scope "/api", DemoWeb do
-  #   pipe_through :api
-  # end
 
   # Enable LiveDashboard in development
   if Application.compile_env(:demo, :dev_routes) do
@@ -47,9 +45,9 @@ defmodule DemoWeb.Router do
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
-      pipe_through :browser
+      pipe_through(:browser)
 
-      live_dashboard "/dashboard", metrics: DemoWeb.Telemetry
+      live_dashboard("/dashboard", metrics: DemoWeb.Telemetry)
     end
   end
 end
