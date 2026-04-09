@@ -165,14 +165,14 @@ defmodule ExEditorWeb.LiveEditorComponentTest do
   end
 
   describe "Component configuration" do
-    test "default debounce is 300ms" do
+    test "default debounce is 50ms" do
       html =
         render_component(ExEditorWeb.LiveEditor, %{
           id: "test-editor",
           content: "test"
         })
 
-      assert html =~ ~s(data-debounce="300")
+      assert html =~ ~s(data-debounce="50")
     end
 
     test "default language is Elixir" do

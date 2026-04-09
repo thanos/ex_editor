@@ -55,7 +55,7 @@ defmodule ExEditorWeb.LiveEditor do
      |> assign(:readonly, false)
      |> assign(:line_numbers, true)
      |> assign(:class, "")
-     |> assign(:debounce, 300)}
+     |> assign(:debounce, 50)}
   end
 
   @impl true
@@ -166,6 +166,33 @@ defmodule ExEditorWeb.LiveEditor do
         {:noreply, assign(socket, :editor, updated_editor)}
 
       {:error, _reason} ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("diff", %{"from" => from, "to" => to, "text" => text}, socket)
+      when is_integer(from) and is_integer(to) and is_binary(text) do
+    editor = socket.assigns.editor
+    current_content = Editor.get_content(editor)
+
+    case Editor.apply_diff(current_content, from, to, text) do
+      {:ok, new_content} ->
+        case Editor.set_content(editor, new_content) do
+          {:ok, updated_editor} ->
+            # Notify parent LiveView
+            if on_change = socket.assigns.on_change do
+              send(socket.root_pid, {String.to_atom(on_change), %{content: new_content}})
+            end
+
+            {:noreply, assign(socket, :editor, updated_editor)}
+
+          {:error, _reason} ->
+            {:noreply, socket}
+        end
+
+      {:error, :out_of_bounds} ->
+        # Positions don't match server state — silently drop
+        # Blur event will trigger a full "change" event to re-sync
         {:noreply, socket}
     end
   end

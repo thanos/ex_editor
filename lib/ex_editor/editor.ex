@@ -280,6 +280,49 @@ defmodule ExEditor.Editor do
   end
 
   @doc """
+  Applies a text diff operation to content.
+
+  Takes the current content string and a diff specified by `from`, `to`, and `text`:
+  - `from` - start index of changed region (0-based, character index)
+  - `to` - end index (exclusive) of changed region in the old content
+  - `text` - replacement text for that region
+
+  Returns `{:ok, new_content}` or `{:error, :out_of_bounds}` if positions are invalid.
+
+  ## Examples
+
+      iex> ExEditor.Editor.apply_diff("hello", 1, 4, "a")
+      {:ok, "halo"}
+
+      iex> ExEditor.Editor.apply_diff("hello", 5, 5, " world")
+      {:ok, "hello world"}
+
+      iex> ExEditor.Editor.apply_diff("hello", 3, 1, "x")
+      {:error, :out_of_bounds}
+
+      iex> ExEditor.Editor.apply_diff("hi", 10, 11, "x")
+      {:error, :out_of_bounds}
+  """
+  @spec apply_diff(String.t(), non_neg_integer(), non_neg_integer(), String.t()) ::
+          {:ok, String.t()} | {:error, :out_of_bounds}
+  def apply_diff(content, from, to, inserted) when is_binary(content) and
+    is_integer(from) and is_integer(to) and is_binary(inserted) do
+    len = String.length(content)
+
+    if from < 0 or to < from or to > len do
+      {:error, :out_of_bounds}
+    else
+      prefix = String.slice(content, 0, from)
+      suffix = String.slice(content, to, len - to)
+      {:ok, prefix <> inserted <> suffix}
+    end
+  end
+
+  def apply_diff(_content, _from, _to, _inserted) do
+    {:error, :out_of_bounds}
+  end
+
+  @doc """
   Gets the syntax-highlighted HTML content if a highlighter is set.
 
   Returns plain text if no highlighter is configured.

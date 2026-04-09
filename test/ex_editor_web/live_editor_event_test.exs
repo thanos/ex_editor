@@ -192,4 +192,37 @@ defmodule ExEditorWeb.LiveEditorEventTest do
       assert change == %{from: "old", to: "new"}
     end
   end
+
+  describe "LiveEditor diff event processing" do
+    test "apply_diff with single character insertion" do
+      assert {:ok, "hallo"} = ExEditor.Editor.apply_diff("hllo", 1, 1, "a")
+    end
+
+    test "apply_diff with deletion (empty replacement)" do
+      assert {:ok, "helo"} = ExEditor.Editor.apply_diff("hello", 3, 4, "")
+    end
+
+    test "apply_diff with range replacement" do
+      assert {:ok, "hi there"} = ExEditor.Editor.apply_diff("hello there", 0, 5, "hi")
+    end
+
+    test "apply_diff rejects out-of-bounds positions" do
+      assert {:error, :out_of_bounds} = ExEditor.Editor.apply_diff("hello", 10, 11, "x")
+      assert {:error, :out_of_bounds} = ExEditor.Editor.apply_diff("hello", 3, 1, "x")
+      assert {:error, :out_of_bounds} = ExEditor.Editor.apply_diff("hello", -1, 2, "x")
+    end
+
+    test "sequential diffs simulate real typing" do
+      # Simulates typing "abc" one character at a time
+      assert {:ok, "a"} = ExEditor.Editor.apply_diff("", 0, 0, "a")
+      assert {:ok, "ab"} = ExEditor.Editor.apply_diff("a", 1, 1, "b")
+      assert {:ok, "abc"} = ExEditor.Editor.apply_diff("ab", 2, 2, "c")
+    end
+
+    test "sequential diffs with deletions" do
+      # Simulates typing "abc" then deleting "b"
+      assert {:ok, "abc"} = ExEditor.Editor.apply_diff("", 0, 0, "abc")
+      assert {:ok, "ac"} = ExEditor.Editor.apply_diff("abc", 1, 2, "")
+    end
+  end
 end
