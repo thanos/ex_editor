@@ -1,10 +1,13 @@
 defmodule DemoWeb.Admin.CodeSnippetLive do
+  alias Demo.CMS.CodeSnippet
+  alias DemoWeb.Layouts
+
   use Backpex.LiveResource,
     adapter_config: [
-      schema: Demo.CMS.CodeSnippet,
+      schema: CodeSnippet,
       repo: Demo.Repo,
-      update_changeset: &Demo.CMS.CodeSnippet.changeset/3,
-      create_changeset: &Demo.CMS.CodeSnippet.changeset/3,
+      update_changeset: &CodeSnippet.changeset/3,
+      create_changeset: &CodeSnippet.changeset/3,
       item_query: &__MODULE__.item_query/3
     ],
     on_mount: {__MODULE__, :local_hook}
@@ -12,7 +15,7 @@ defmodule DemoWeb.Admin.CodeSnippetLive do
   import Ecto.Query, only: [from: 2]
 
   @impl Backpex.LiveResource
-  def layout(_assigns), do: {DemoWeb.Layouts, :admin}
+  def layout(_assigns), do: {Layouts, :admin}
 
   def on_mount(:local_hook, _params, _session, socket) do
     editor = ExEditor.Editor.new(content: "")
@@ -34,7 +37,7 @@ defmodule DemoWeb.Admin.CodeSnippetLive do
   def item_query(query, :edit, assigns), do: item_query(query, :show, assigns)
 
   def item_query(_query, :show, %{params: %{"backpex_id" => id}}) do
-    query = from(c0 in Demo.CMS.CodeSnippet, as: :codesnippet, where: c0.id == ^id, select: c0)
+    query = from(c0 in CodeSnippet, as: :codesnippet, where: c0.id == ^id, select: c0)
     query
   end
 
