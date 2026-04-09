@@ -14,7 +14,7 @@ defmodule ExEditor.HighlightedLinesTest do
       result = HighlightedLines.wrap_lines("line1\nline2\nline3")
 
       assert result ==
-               ~s(<div class="ex-editor-line">line1</div>\n<div class="ex-editor-line">line2</div>\n<div class="ex-editor-line">line3</div>)
+               ~s(<div class="ex-editor-line">line1</div><div class="ex-editor-line">line2</div><div class="ex-editor-line">line3</div>)
     end
 
     test "wraps empty string" do
@@ -35,7 +35,7 @@ defmodule ExEditor.HighlightedLinesTest do
       result = HighlightedLines.wrap_lines(html)
 
       assert result ==
-               ~s(<div class="ex-editor-line"><span class="hl-keyword">def</span> hello</div>\n<div class="ex-editor-line"><span class="hl-keyword">end</span></div>)
+               ~s(<div class="ex-editor-line"><span class="hl-keyword">def</span> hello</div><div class="ex-editor-line"><span class="hl-keyword">end</span></div>)
     end
   end
 
@@ -44,7 +44,7 @@ defmodule ExEditor.HighlightedLinesTest do
       result = HighlightedLines.wrap_lines_with_empties("line1\n\nline3")
 
       assert result ==
-               ~s(<div class="ex-editor-line">line1</div>\n<div class="ex-editor-line">&nbsp;</div>\n<div class="ex-editor-line">line3</div>)
+               ~s(<div class="ex-editor-line">line1</div><div class="ex-editor-line">&nbsp;</div><div class="ex-editor-line">line3</div>)
     end
 
     test "wraps single line normally" do
@@ -63,7 +63,7 @@ defmodule ExEditor.HighlightedLinesTest do
       result = HighlightedLines.wrap_lines_with_empties("line1\n\n\nline4")
 
       assert result ==
-               ~s(<div class="ex-editor-line">line1</div>\n<div class="ex-editor-line">&nbsp;</div>\n<div class="ex-editor-line">&nbsp;</div>\n<div class="ex-editor-line">line4</div>)
+               ~s(<div class="ex-editor-line">line1</div><div class="ex-editor-line">&nbsp;</div><div class="ex-editor-line">&nbsp;</div><div class="ex-editor-line">line4</div>)
     end
   end
 

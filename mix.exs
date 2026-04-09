@@ -47,6 +47,7 @@ defmodule ExEditor.MixProject do
     [
       {:phoenix_live_view, ">= 0.19.0", optional: true},
       {:phoenix_html, ">= 3.0.0", optional: true},
+      {:phoenix_test, "~> 0.2", only: :test},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
