@@ -47,20 +47,23 @@ defmodule DemoWeb.EditorLive do
           </a>
         <% end %>
 
-        <div class="grid grid-cols-2 gap-4 h-[600px]">
+        <div class="grid grid-cols-2 gap-4">
           <!-- Editor -->
-          <div class="border border-[#3e3e3e] rounded-lg overflow-hidden">
-            <.live_component
-              module={ExEditorWeb.LiveEditor}
-              id="elixir-editor"
-              content={@code}
-              language={:elixir}
-              on_change="code_changed"
-            />
+          <div class="flex flex-col h-[600px]">
+            <h2 class="text-lg font-semibold mb-2 text-white">Editor</h2>
+            <div class="border border-[#3e3e3e] rounded-lg overflow-hidden flex-1">
+              <.live_component
+                module={ExEditorWeb.LiveEditor}
+                id="elixir-editor"
+                content={@code}
+                language={:elixir}
+                on_change="code_changed"
+              />
+            </div>
           </div>
 
           <!-- Raw Content Preview -->
-          <div class="flex flex-col">
+          <div class="flex flex-col h-[600px]">
             <h2 class="text-lg font-semibold mb-2 text-white">Raw Content (Preview)</h2>
             <pre class="font-mono text-sm p-4 bg-[#252525] rounded-lg overflow-auto flex-1 border border-[#3e3e3e]"><%= @code %></pre>
           </div>
