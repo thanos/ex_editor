@@ -41,8 +41,9 @@ defmodule DemoWeb.Admin.Fields.EditField do
 
     # For index/resource views, show truncated text
     if assigns.live_action in [:index, :resource_action] do
+      assigns = assign(assigns, :highlight_field_value, highlight_code(field_value))
       ~H"""
-      <p class="truncate" phx-no-format><%= raw highlight_code(field_value) %></p>
+      <p class="truncate" phx-no-format>{raw @highlight_field_value }</p>
       """
     else
       # For show view, display with line numbers similar to editor
@@ -56,13 +57,19 @@ defmodule DemoWeb.Admin.Fields.EditField do
     ~H"""
     <div class="border border-gray-300 rounded-lg overflow-hidden bg-slate-900">
       <div class="ex-editor-wrapper" style="display: flex;">
-        <div class="ex-editor-gutter" style="padding-top: 8px; padding-right: 12px; padding-left: 8px; background-color: #1e293b; color: #64748b; font-family: 'Monaco', 'Menlo', monospace; font-size: 14px; line-height: 1.5; user-select: none; border-right: 1px solid #334155;">
+        <div
+          class="ex-editor-gutter"
+          style="padding-top: 8px; padding-right: 12px; padding-left: 8px; background-color: #1e293b; color: #64748b; font-family: 'Monaco', 'Menlo', monospace; font-size: 14px; line-height: 1.5; user-select: none; border-right: 1px solid #334155;"
+        >
           <%= for num <- 1..line_count(@content) do %>
-            <div class="ex-editor-line-number" style="text-align: right;"><%= num %></div>
+            <div class="ex-editor-line-number" style="text-align: right;">{num}</div>
           <% end %>
         </div>
         <div class="ex-editor-code-area" style="flex: 1; overflow-x: auto;">
-          <pre class="ex-editor-highlight" style="padding: 8px; margin: 0; background-color: #0f172a; color: #e2e8f0; font-family: 'Monaco', 'Menlo', monospace; font-size: 14px; line-height: 1.5; overflow: hidden;"><%= raw highlight_code(@content) %></pre>
+          <pre
+            class="ex-editor-highlight"
+            style="padding: 8px; margin: 0; background-color: #0f172a; color: #e2e8f0; font-family: 'Monaco', 'Menlo', monospace; font-size: 14px; line-height: 1.5; overflow: hidden;"
+          ><%= raw highlight_code(@content) %></pre>
         </div>
       </div>
     </div>
@@ -73,7 +80,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
   def render_form(assigns) do
     # Get the field value from the form field
     field_value = assigns.form[assigns.name]
-    content = field_value && field_value.value || ""
+    content = (field_value && field_value.value) || ""
 
     assigns = assign(assigns, :content, content)
 
@@ -84,7 +91,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
           <Layout.input_label for={@form[@name]} text={@field_options[:label]} />
         </:label>
 
-        <!-- Use ExEditor LiveEditor component for syntax-highlighted editing -->
+    <!-- Use ExEditor LiveEditor component for syntax-highlighted editing -->
         <div class="border border-gray-300 rounded-lg overflow-hidden mb-2 h-96">
           <.live_component
             module={ExEditorWeb.LiveEditor}
@@ -97,7 +104,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
           />
         </div>
 
-        <!-- Hidden input field to sync with form -->
+    <!-- Hidden input field to sync with form -->
         <input
           type="hidden"
           name={@form[@name].name}
@@ -107,18 +114,16 @@ defmodule DemoWeb.Admin.Fields.EditField do
           data-field-id={@form[@name].id}
         />
 
-        <!-- Help text -->
+    <!-- Help text -->
         <%= if help_text = Backpex.Field.help_text(@field_options, assigns) do %>
-          <p class="text-sm text-gray-500 mt-1"><%= help_text %></p>
+          <p class="text-sm text-gray-500 mt-1">{help_text}</p>
         <% end %>
 
-        <!-- Field errors -->
+    <!-- Field errors -->
         <%= if Enum.any?(@form[@name].errors) do %>
           <div class="text-sm text-red-600 mt-1">
-            <%= Backpex.Field.translate_errors(
-              @form[@name].errors,
-              Backpex.Field.translate_error_fun(@field_options, assigns)
-            )
+            <%= @form[@name].errors
+            |> Enum.map(&(Backpex.Field.translate_error_fun(@field_options, assigns).(&1)))
             |> Enum.map(&("• #{&1}"))
             |> Enum.join("<br>")
             |> raw() %>
@@ -130,6 +135,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
   end
 
   defp line_count(nil), do: 1
+
   defp line_count(content) when is_binary(content) do
     content
     |> String.split("\n")
