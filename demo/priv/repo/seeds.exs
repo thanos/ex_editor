@@ -9,6 +9,7 @@ alias Demo.CMS.CodeSnippet
 if Repo.aggregate(CodeSnippet, :count) == 0 do
   Repo.insert!(%CodeSnippet{
     name: "GenServer Example",
+    args: %{"initial_value" => 0, "timeout" => 5000, "debug" => false},
     code: """
     defmodule MyApp.Counter do
       use GenServer
@@ -48,6 +49,7 @@ if Repo.aggregate(CodeSnippet, :count) == 0 do
 
   Repo.insert!(%CodeSnippet{
     name: "Phoenix LiveView Component",
+    args: %{"endpoint" => "MyAppWeb.Endpoint", "router" => "MyAppWeb.Router", "layout" => "app"},
     code: """
     defmodule MyAppWeb.SearchLive do
       use MyAppWeb, :live_view
@@ -92,6 +94,7 @@ if Repo.aggregate(CodeSnippet, :count) == 0 do
 
   Repo.insert!(%CodeSnippet{
     name: "Ecto Schema with Changeset",
+    args: %{"repo" => "MyApp.Repo", "table" => "users", "primary_key" => "id"},
     code: """
     defmodule MyApp.Accounts.User do
       use Ecto.Schema
