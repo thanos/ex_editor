@@ -67,6 +67,49 @@ The component handles:
 - Scroll synchronization
 - Native cursor with immediate visual feedback
 
+## Backpex Admin Panel Integration
+
+v0.3.0 includes **complete, production-ready integration with Backpex**. You can now embed ExEditor directly into your Backpex admin panels:
+
+```elixir
+def fields do
+  [
+    name: %{module: Backpex.Fields.Text, label: "Name"},
+    code: %{
+      module: MyAppWeb.Admin.Fields.CodeEditor,
+      label: "Code"
+    }
+  ]
+end
+```
+
+### Features
+
+- **Edit & View Modes**: Syntax-highlighted editor in forms, readonly display with line numbers on show pages
+- **Form Integration**: Changes are automatically synced to the form with the EditorFormSync hook
+- **Line Numbers**: Display with code in both edit and view modes
+- **Responsive**: Editor adapts to container size
+- **Configurable**: Debounce, language, and styling options
+
+### Example
+
+The demo application includes a complete working example:
+
+```bash
+cd demo
+mix setup
+mix phx.server
+# Visit http://localhost:4000/admin/code-snippets
+```
+
+Edit any code snippet and see the editor in action with:
+- Full syntax highlighting while typing
+- Instant line number updates
+- Real-time form synchronization
+- Persistence to database
+
+See [**Backpex Integration Guide**](guides/BACKPEX_INTEGRATION.md) for complete implementation details.
+
 ## Architecture Highlights
 
 **Data Model**: Elixir owns all content, history, plugins, and syntax highlighting logic
@@ -77,12 +120,17 @@ The component handles:
 ## What's New in v0.3.0
 
 - Complete LiveView integration with production-ready component
+- **Backpex admin panel integration** - Custom field with form sync and readonly display
 - Incremental diff synchronization replacing polling/full-content updates
 - Native browser caret (no JS-overlay cursor)
 - JavaScript-managed line numbers (instant, no server round-trip)
 - Comprehensive test suite with LiveComponent testing
 - Extensive behavior module documentation with multiple examples
-- Demo application showcasing side-by-side editor and preview
+- Detailed Backpex integration guide with complete examples
+- Demo application showcasing:
+  - Side-by-side editor and preview
+  - Code snippet admin with ExEditor field
+  - Full CRUD operations with syntax highlighting
 
 ## What's Next?
 
