@@ -54,11 +54,15 @@ COPY demo/config/config.exs demo/config/${MIX_ENV}.exs config/
 RUN mix deps.compile
 
 COPY demo/priv priv
-
 COPY demo/lib lib
+COPY demo/assets assets
 
 # Compile the release
 RUN mix compile
+
+# Install esbuild and tailwind binaries, then build and digest assets
+RUN mix assets.setup
+RUN mix assets.deploy
 
 # Changes to config/runtime.exs don't require recompiling the code
 COPY demo/config/runtime.exs config/
