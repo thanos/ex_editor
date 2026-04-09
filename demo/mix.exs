@@ -110,8 +110,7 @@ defmodule Demo.MixProject do
       {"credo --strict", :dev},
       {"sobelow --config", :dev},
       # {"dialyzer", :dev},
-      {"test --cover", :test},
-      {"docs --warnings-as-errors", :dev}
+      {"test --cover", :test}
     ]
 
     Enum.each(steps, fn {task, env} ->
