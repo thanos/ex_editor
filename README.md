@@ -123,6 +123,127 @@ Built-in highlighters:
 - `:elixir` - Elixir syntax
 - `:json` - JSON syntax
 
+## Backpex Integration
+
+ExEditor integrates seamlessly with [Backpex](https://hexdocs.pm/backpex) admin panels as a custom field for code editing.
+
+### Setup
+
+1. Create a custom field module in your Backpex resource:
+
+```elixir
+defmodule MyAppWeb.Admin.Fields.CodeEditor do
+  use Backpex.Field, config_schema: []
+
+  @impl Backpex.Field
+  def render_value(assigns) do
+    field_value = Map.get(assigns.item, assigns.name)
+
+    ~H"""
+    <div class="border border-gray-300 rounded-lg overflow-hidden bg-slate-900">
+      <div class="ex-editor-wrapper" style="display: flex;">
+        <div class="ex-editor-gutter">
+          <%= for num <- 1..line_count(field_value) do %>
+            <div class="ex-editor-line-number"><%= num %></div>
+          <% end %>
+        </div>
+        <div class="ex-editor-code-area">
+          <pre class="ex-editor-highlight"><%= raw highlight_code(field_value) %></pre>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @impl Backpex.Field
+  def render_form(assigns) do
+    field_value = assigns.form[assigns.name]
+    content = field_value && field_value.value || ""
+    assigns = assign(assigns, :content, content)
+
+    ~H"""
+    <div>
+      <Layout.field_container>
+        <:label align={Backpex.Field.align_label(@field_options, assigns, :top)}>
+          <Layout.input_label for={@form[@name]} text={@field_options[:label]} />
+        </:label>
+
+        <div class="border border-gray-300 rounded-lg overflow-hidden mb-2 h-96">
+          <.live_component
+            module={ExEditorWeb.LiveEditor}
+            id={"editor_#{@name}"}
+            content={@content}
+            language={:elixir}
+            debounce={100}
+            readonly={@readonly}
+          />
+        </div>
+
+        <input
+          type="hidden"
+          name={@form[@name].name}
+          value={@content}
+          id={"#{@form[@name].id}_editor_sync"}
+          phx-hook="EditorFormSync"
+          data-field-id={@form[@name].id}
+        />
+
+        <%= if help_text = Backpex.Field.help_text(@field_options, assigns) do %>
+          <p class="text-sm text-gray-500 mt-1"><%= help_text %></p>
+        <% end %>
+      </Layout.field_container>
+    </div>
+    """
+  end
+
+  defp line_count(nil), do: 1
+  defp line_count(content) when is_binary(content) do
+    content |> String.split("\n") |> length()
+  end
+
+  defp highlight_code(nil), do: ""
+  defp highlight_code(content) do
+    editor = ExEditor.Editor.new(content: content)
+    editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
+    ExEditor.Editor.get_highlighted_content(editor)
+  end
+end
+```
+
+2. Register the field in your Backpex resource:
+
+```elixir
+def fields do
+  [
+    name: %{module: Backpex.Fields.Text, label: "Name"},
+    code: %{
+      module: MyAppWeb.Admin.Fields.CodeEditor,
+      label: "Code",
+      help_text: "Enter your code here"
+    }
+  ]
+end
+```
+
+3. Add the EditorFormSync hook to your `assets/js/app.js`:
+
+```javascript
+import EditorFormSync from "./hooks/editor_form_sync.js"
+
+let liveSocket = new LiveSocket("/live", Socket, {
+  hooks: { EditorHook, EditorFormSync }
+})
+```
+
+### Features
+
+- **Full syntax highlighting** in both edit and view modes
+- **Line numbers** displayed with code (with instant updates while editing)
+- **Real-time form synchronization** - changes are automatically synced to the form
+- **Readonly display** - code is syntax-highlighted with line numbers on the show page
+- **Responsive** - editor adapts to container size
+- **Configurable** - debounce, language, and styling options
+
 ## Core Editor API
 
 ### Basic Usage

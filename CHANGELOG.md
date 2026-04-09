@@ -50,6 +50,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `lib/ex_editor_web/` directory structure for LiveView integration
 - `lib/ex_editor_web/css/editor.css` with complete dark/light theme support
 
+#### Backpex Integration
+- Custom field implementation for Backpex admin panels
+- Syntax-highlighted code editing in admin forms
+- Readonly display with line numbers on show pages
+- Form sync hook for automatic field value updates
+- Ready-to-use example in demo application
+- Documentation with complete integration guide
+
 #### Testing & Documentation
 - Comprehensive test suite: 285 tests, 88.7%+ coverage
 - 11 unit tests for `Editor.apply_diff/4` with edge cases
@@ -59,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unit tests for highlighters, plugins, and core modules
 - Behavior modules (Highlighter, Plugin) with extensive examples
 - Integration with `phoenix_test` for LiveComponent testing
+- Backpex integration guide with example field implementation
 
 ### Changed
 
