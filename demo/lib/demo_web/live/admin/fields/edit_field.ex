@@ -36,6 +36,9 @@ defmodule DemoWeb.Admin.Fields.EditField do
 
   @impl Backpex.Field
   def render_value(assigns) do
+    # Get the field value from the item
+    field_value = Map.get(assigns.item, assigns.name)
+
     ~H"""
     <p
       class={[
@@ -43,12 +46,18 @@ defmodule DemoWeb.Admin.Fields.EditField do
         @live_action == :show && "overflow-x-auto whitespace-pre-wrap"
       ]}
       phx-no-format
-    ><%= raw highlight_code(@value) %></p>
+    ><%= raw highlight_code(field_value) %></p>
     """
   end
 
   @impl Backpex.Field
   def render_form(assigns) do
+    # Get the field value from the form field
+    field_value = assigns.form[assigns.name]
+    content = field_value && field_value.value || ""
+
+    assigns = assign(assigns, :content, content)
+
     ~H"""
     <div>
       <Layout.field_container>
@@ -61,7 +70,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
           <.live_component
             module={ExEditorWeb.LiveEditor}
             id={"editor_#{@name}"}
-            content={@value || ""}
+            content={@content}
             language={:elixir}
             on_change="code_changed"
             debounce={100}
@@ -73,7 +82,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
         <input
           type="hidden"
           name={@form[@name].name}
-          value={@value || ""}
+          value={@content}
           id={"#{@form[@name].id}_editor_sync"}
           phx-hook="EditorFormSync"
           data-field-id={@form[@name].id}
