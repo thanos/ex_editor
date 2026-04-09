@@ -40,9 +40,11 @@ defmodule Demo.Application do
     if System.get_env("SKIP_MIGRATIONS") == "true" do
       []
     else
-      [{Ecto.Migrator,
-        repos: Application.fetch_env!(:demo, :ecto_repos),
-        skip: System.get_env("RELEASE_NAME") == nil}]
+      [
+        {Ecto.Migrator,
+         repos: Application.fetch_env!(:demo, :ecto_repos),
+         skip: System.get_env("RELEASE_NAME") == nil}
+      ]
     end
   end
 end
