@@ -39,14 +39,33 @@ defmodule DemoWeb.Admin.Fields.EditField do
     # Get the field value from the item
     field_value = Map.get(assigns.item, assigns.name)
 
+    # For index/resource views, show truncated text
+    if assigns.live_action in [:index, :resource_action] do
+      ~H"""
+      <p class="truncate" phx-no-format><%= raw highlight_code(field_value) %></p>
+      """
+    else
+      # For show view, display with line numbers similar to editor
+      render_code_with_lines(field_value)
+    end
+  end
+
+  defp render_code_with_lines(content) do
+    assigns = %{content: content}
+
     ~H"""
-    <p
-      class={[
-        @live_action in [:index, :resource_action] && "truncate",
-        @live_action == :show && "overflow-x-auto whitespace-pre-wrap"
-      ]}
-      phx-no-format
-    ><%= raw highlight_code(field_value) %></p>
+    <div class="border border-gray-300 rounded-lg overflow-hidden bg-slate-900">
+      <div class="ex-editor-wrapper" style="display: flex;">
+        <div class="ex-editor-gutter" style="padding-top: 8px; padding-right: 12px; padding-left: 8px; background-color: #1e293b; color: #64748b; font-family: 'Monaco', 'Menlo', monospace; font-size: 14px; line-height: 1.5; user-select: none; border-right: 1px solid #334155;">
+          <%= for num <- 1..line_count(@content) do %>
+            <div class="ex-editor-line-number" style="text-align: right;"><%= num %></div>
+          <% end %>
+        </div>
+        <div class="ex-editor-code-area" style="flex: 1; overflow-x: auto;">
+          <pre class="ex-editor-highlight" style="padding: 8px; margin: 0; background-color: #0f172a; color: #e2e8f0; font-family: 'Monaco', 'Menlo', monospace; font-size: 14px; line-height: 1.5; overflow: hidden;"><%= raw highlight_code(@content) %></pre>
+        </div>
+      </div>
+    </div>
     """
   end
 
@@ -108,6 +127,13 @@ defmodule DemoWeb.Admin.Fields.EditField do
       </Layout.field_container>
     </div>
     """
+  end
+
+  defp line_count(nil), do: 1
+  defp line_count(content) when is_binary(content) do
+    content
+    |> String.split("\n")
+    |> length()
   end
 
   defp highlight_code(nil), do: ""
