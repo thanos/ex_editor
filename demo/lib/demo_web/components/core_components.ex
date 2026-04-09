@@ -463,7 +463,23 @@ defmodule DemoWeb.CoreComponents do
   @doc """
   Translates the errors for a field from a keyword list of errors.
   """
-  def translate_errors(errors, field) when is_list(errors) do
-    for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
+  # def translate_errors(errors, field) when is_list(errors) do
+  #   for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
+  # end
+
+  def translate_backpex({msg, opts}) do
+    if count = opts[:count] do
+      Gettext.dngettext(DemoWeb.Gettext, "backpex", msg, msg, count, opts)
+    else
+      Gettext.dgettext(DemoWeb.Gettext, "backpex", msg, opts)
+    end
+  end
+
+  def translate_error({msg, opts}) do
+    if count = opts[:count] do
+      Gettext.dngettext(DemoWeb.Gettext, "errors", msg, msg, count, opts)
+    else
+      Gettext.dgettext(DemoWeb.Gettext, "errors", msg, opts)
+    end
   end
 end

@@ -1,0 +1,153 @@
+defmodule DemoWeb.Admin.Fields.CodeField do
+  @config_schema [
+    placeholder: [
+      doc: "Placeholder value or function that receives the assigns.",
+      type: {:or, [:string, {:fun, 1}]}
+    ],
+    debounce: [
+      doc: "Timeout value (in milliseconds), \"blur\" or function that receives the assigns.",
+      type: {:or, [:pos_integer, :string, {:fun, 1}]}
+    ],
+    throttle: [
+      doc: "Timeout value (in milliseconds) or function that receives the assigns.",
+      type: {:or, [:pos_integer, {:fun, 1}]}
+    ],
+    rows: [
+      doc: "Number of visible text lines for the control.",
+      type: :non_neg_integer,
+      default: 2
+    ],
+    readonly: [
+      doc: "Sets the field to readonly. Also see the [panels](/guides/fields/readonly.md) guide.",
+      type: {:or, [:boolean, {:fun, 1}]}
+    ]
+  ]
+
+  @moduledoc """
+  A field for handling long text values.
+
+  ## Field-specific options
+
+  See `Backpex.Field` for general field options.
+
+  #{NimbleOptions.docs(@config_schema)}
+  """
+  use Backpex.Field, config_schema: @config_schema
+
+  @impl Backpex.Field
+  def render_value(assigns) do
+    # Get the field value from the item
+    field_value = Map.get(assigns.item, assigns.name)
+
+    # For index/resource views, show truncated text
+    if assigns.live_action in [:index, :resource_action] do
+      assigns = assign(assigns, :highlight_field_value, highlight_code(field_value))
+
+      ~H"""
+      <p class="truncate" phx-no-format>{raw @highlight_field_value}</p>
+      """
+    else
+      # For show view, display with line numbers similar to editor
+      render_code_with_lines(field_value)
+    end
+  end
+
+  defp render_code_with_lines(content) do
+    assigns = %{content: content}
+
+    ~H"""
+    <div class="border border-gray-300 rounded-lg overflow-hidden bg-slate-900">
+      <div class="ex-editor-wrapper" style="display: flex;">
+        <div
+          class="ex-editor-gutter"
+          style="padding-top: 8px; padding-right: 12px; padding-left: 8px; background-color: #1e293b; color: #64748b; font-family: 'Monaco', 'Menlo', monospace; font-size: 14px; line-height: 1.5; user-select: none; border-right: 1px solid #334155;"
+        >
+          <%= for num <- 1..line_count(@content) do %>
+            <div class="ex-editor-line-number" style="text-align: right;">{num}</div>
+          <% end %>
+        </div>
+        <div class="ex-editor-code-area" style="flex: 1; overflow-x: auto;">
+          <pre
+            class="ex-editor-highlight"
+            style="padding: 8px; margin: 0; background-color: #0f172a; color: #e2e8f0; font-family: 'Monaco', 'Menlo', monospace; font-size: 14px; line-height: 1.5; overflow: hidden;"
+          ><%= raw highlight_code(@content) %></pre>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  @impl Backpex.Field
+  def render_form(assigns) do
+    # Get the field value from the form field
+    field_value = assigns.form[assigns.name]
+    content = (field_value && field_value.value) || ""
+
+    assigns = assign(assigns, :content, content)
+
+    ~H"""
+    <div>
+      <Layout.field_container>
+        <:label align={Backpex.Field.align_label(@field_options, assigns, :top)}>
+          <Layout.input_label for={@form[@name]} text={@field_options[:label]} />
+        </:label>
+
+    <!-- Use ExEditor LiveEditor component for syntax-highlighted editing -->
+        <div class="border border-gray-300 rounded-lg overflow-hidden mb-2 h-96">
+          <.live_component
+            module={ExEditorWeb.LiveEditor}
+            id={"editor_#{@name}"}
+            content={@content}
+            language={:elixir}
+            on_change="code_changed"
+            debounce={100}
+            readonly={@readonly}
+          />
+        </div>
+
+    <!-- Hidden input field to sync with form -->
+        <input
+          type="hidden"
+          name={@form[@name].name}
+          value={@content}
+          id={"#{@form[@name].id}_editor_sync"}
+          phx-hook="EditorFormSync"
+          data-field-id={@form[@name].id}
+        />
+
+    <!-- Help text -->
+        <%= if help_text = Backpex.Field.help_text(@field_options, assigns) do %>
+          <p class="text-sm text-gray-500 mt-1">{help_text}</p>
+        <% end %>
+
+    <!-- Field errors -->
+        <%= if Enum.any?(@form[@name].errors) do %>
+          <div class="text-sm text-red-600 mt-1">
+            {@form[@name].errors
+            |> Enum.map(&Backpex.Field.translate_error_fun(@field_options, assigns).(&1))
+            |> Enum.map(&"• #{&1}")
+            |> Enum.join("<br>")
+            |> raw()}
+          </div>
+        <% end %>
+      </Layout.field_container>
+    </div>
+    """
+  end
+
+  defp line_count(nil), do: 1
+
+  defp line_count(content) when is_binary(content) do
+    content
+    |> String.split("\n")
+    |> length()
+  end
+
+  defp highlight_code(nil), do: ""
+
+  defp highlight_code(content) do
+    editor = ExEditor.Editor.new(content: content)
+    editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
+    ExEditor.Editor.get_highlighted_content(editor)
+  end
+end

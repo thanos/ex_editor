@@ -56,28 +56,15 @@ defmodule DemoWeb.Admin.CodeSnippetLive do
         label: "Name"
       },
       code: %{
-        module: DemoWeb.Admin.Fields.EditField,
+        module: DemoWeb.Admin.Fields.CodeField,
         rows: 10,
         label: "Code"
       },
       args: %{
-        module: Backpex.Fields.Textarea,
+        module: DemoWeb.Admin.Fields.JsonField,
         label: "Args (JSON)",
-        rows: 5,
-        render: {__MODULE__, :render_args_value}
+        rows: 5
       }
     ]
   end
-
-  def render_args_value(assigns) do
-    import Phoenix.Component, only: [sigil_H: 2]
-
-    ~H"""
-    <pre class="text-sm bg-gray-100 dark:bg-gray-800 rounded p-2 overflow-x-auto whitespace-pre-wrap"><%= format_json(@value) %></pre>
-    """
-  end
-
-  defp format_json(nil), do: "{}"
-  defp format_json(value) when is_map(value), do: Jason.encode!(value, pretty: true)
-  defp format_json(value) when is_binary(value), do: value
 end

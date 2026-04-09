@@ -10,7 +10,10 @@ import Config
 # Configure ecto repos
 config :demo, ecto_repos: [Demo.Repo]
 
-config :backpex, :pubsub_server, Demo.PubSub
+config :backpex,
+  pubsub_server: Demo.PubSub,
+  translator_function: {DemoWeb.CoreComponents, :translate_backpex},
+  error_translator_function: {DemoWeb.CoreComponents, :translate_error}
 
 # Configures the endpoint
 config :demo, DemoWeb.Endpoint,

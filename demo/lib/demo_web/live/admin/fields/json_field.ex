@@ -1,4 +1,4 @@
-defmodule DemoWeb.Admin.Fields.EditField do
+defmodule DemoWeb.Admin.Fields.JsonField do
   @config_schema [
     placeholder: [
       doc: "Placeholder value or function that receives the assigns.",
@@ -39,9 +39,10 @@ defmodule DemoWeb.Admin.Fields.EditField do
     # Get the field value from the item
     field_value = Map.get(assigns.item, assigns.name)
 
+
     # For index/resource views, show truncated text
     if assigns.live_action in [:index, :resource_action] do
-      assigns = assign(assigns, :highlight_field_value, highlight_code(field_value))
+      assigns = assign(assigns, :highlight_field_value, highlight_text(field_value))
 
       ~H"""
       <p class="truncate" phx-no-format>{raw @highlight_field_value }</p>
@@ -70,7 +71,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
           <pre
             class="ex-editor-highlight"
             style="padding: 8px; margin: 0; background-color: #0f172a; color: #e2e8f0; font-family: 'Monaco', 'Menlo', monospace; font-size: 14px; line-height: 1.5; overflow: hidden;"
-          ><%= raw highlight_code(@content) %></pre>
+          ><%= raw highlight_text(@content) %></pre>
         </div>
       </div>
     </div>
@@ -81,7 +82,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
   def render_form(assigns) do
     # Get the field value from the form field
     field_value = assigns.form[assigns.name]
-    content = (field_value && field_value.value) || ""
+    content = make_string(field_value && field_value.value) || ""
 
     assigns = assign(assigns, :content, content)
 
@@ -91,7 +92,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
         <:label align={Backpex.Field.align_label(@field_options, assigns, :top)}>
           <Layout.input_label for={@form[@name]} text={@field_options[:label]} />
         </:label>
-        
+
     <!-- Use ExEditor LiveEditor component for syntax-highlighted editing -->
         <div class="border border-gray-300 rounded-lg overflow-hidden mb-2 h-96">
           <.live_component
@@ -104,7 +105,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
             readonly={@readonly}
           />
         </div>
-        
+
     <!-- Hidden input field to sync with form -->
         <input
           type="hidden"
@@ -114,12 +115,12 @@ defmodule DemoWeb.Admin.Fields.EditField do
           phx-hook="EditorFormSync"
           data-field-id={@form[@name].id}
         />
-        
+
     <!-- Help text -->
         <%= if help_text = Backpex.Field.help_text(@field_options, assigns) do %>
           <p class="text-sm text-gray-500 mt-1">{help_text}</p>
         <% end %>
-        
+
     <!-- Field errors -->
         <%= if Enum.any?(@form[@name].errors) do %>
           <div class="text-sm text-red-600 mt-1">
@@ -143,11 +144,23 @@ defmodule DemoWeb.Admin.Fields.EditField do
     |> length()
   end
 
-  defp highlight_code(nil), do: ""
+  defp line_count(content) do
+    # Handle non-binary values (like maps) - convert to string first
+    content
+    |> make_string()
+    |> String.split("\n")
+    |> length()
+  end
 
-  defp highlight_code(content) do
-    editor = ExEditor.Editor.new(content: content)
-    editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.Elixir)
+  defp highlight_text(nil), do: ""
+
+  defp highlight_text(content) do
+    editor = ExEditor.Editor.new(content: make_string(content))
+    editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.JSON)
     ExEditor.Editor.get_highlighted_content(editor)
   end
+
+  def make_string(nil), do: ""
+  def make_string(content) when is_binary(content), do: content
+  def make_string(content), do: Phoenix.json_library().encode!(content)
 end
