@@ -55,17 +55,34 @@ defmodule DemoWeb.Admin.Fields.EditField do
         <:label align={Backpex.Field.align_label(@field_options, assigns, :top)}>
           <Layout.input_label for={@form[@name]} text={@field_options[:label]} />
         </:label>
-        <BackpexForm.input
-          type="textarea"
-          field={@form[@name]}
-          placeholder={@field_options[:placeholder]}
-          rows={@field_options[:rows]}
+
+        <!-- Use ExEditor LiveEditor component for syntax-highlighted editing -->
+        <div class="border border-gray-300 rounded-lg overflow-hidden mb-2 h-96">
+          <.live_component
+            module={ExEditorWeb.LiveEditor}
+            id={"editor_#{@name}"}
+            content={@value || ""}
+            language={:elixir}
+            on_change="code_changed"
+            debounce={100}
+            readonly={@readonly}
+          />
+        </div>
+
+        <!-- Hidden input field to sync with form -->
+        <input
+          type="hidden"
+          name={@form[@name].name}
+          value={@value || ""}
+          id={"#{@form[@name].id}_editor_sync"}
+          phx-hook="EditorFormSync"
+          data-field-id={@form[@name].id}
+        />
+
+        <Backpex.Field.help_text text={Backpex.Field.help_text(@field_options, assigns)} />
+        <Backpex.Field.error
           translate_error_fun={Backpex.Field.translate_error_fun(@field_options, assigns)}
-          help_text={Backpex.Field.help_text(@field_options, assigns)}
-          phx-debounce={Backpex.Field.debounce(@field_options, assigns)}
-          phx-throttle={Backpex.Field.throttle(@field_options, assigns)}
-          readonly={@readonly}
-          disabled={@readonly}
+          errors={@form[@name].errors}
         />
       </Layout.field_container>
     </div>

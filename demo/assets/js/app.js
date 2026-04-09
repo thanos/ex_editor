@@ -5,6 +5,7 @@ import topbar from "../vendor/topbar";
 import { Hooks as BackpexHooks } from "backpex";
 
 import EditorHook from "./hooks/editor.js";
+import EditorFormSync from "./hooks/editor_form_sync.js";
 
 const csrfToken = document
   .querySelector("meta[name='csrf-token']")
@@ -13,7 +14,7 @@ const csrfToken = document
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: { _csrf_token: csrfToken },
-  hooks: { EditorHook, ...BackpexHooks },
+  hooks: { EditorHook, EditorFormSync, ...BackpexHooks },
 });
 
 topbar.config({ barColors: { 0: "#29d" }, shadowColor: "rgba(0, 0, 0, .3)" });
