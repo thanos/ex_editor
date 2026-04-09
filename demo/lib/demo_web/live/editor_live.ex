@@ -61,8 +61,8 @@ defmodule DemoWeb.EditorLive do
               />
             </div>
           </div>
-
-          <!-- Raw Content Preview -->
+          
+    <!-- Raw Content Preview -->
           <div class="flex flex-col h-[600px]">
             <h2 class="text-lg font-semibold mb-2 text-white">Raw Content (Preview)</h2>
             <pre class="font-mono text-sm p-4 bg-[#252525] rounded-lg overflow-auto flex-1 border border-[#3e3e3e]"><%= @code %></pre>

@@ -42,6 +42,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
     # For index/resource views, show truncated text
     if assigns.live_action in [:index, :resource_action] do
       assigns = assign(assigns, :highlight_field_value, highlight_code(field_value))
+
       ~H"""
       <p class="truncate" phx-no-format>{raw @highlight_field_value }</p>
       """
@@ -90,7 +91,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
         <:label align={Backpex.Field.align_label(@field_options, assigns, :top)}>
           <Layout.input_label for={@form[@name]} text={@field_options[:label]} />
         </:label>
-
+        
     <!-- Use ExEditor LiveEditor component for syntax-highlighted editing -->
         <div class="border border-gray-300 rounded-lg overflow-hidden mb-2 h-96">
           <.live_component
@@ -103,7 +104,7 @@ defmodule DemoWeb.Admin.Fields.EditField do
             readonly={@readonly}
           />
         </div>
-
+        
     <!-- Hidden input field to sync with form -->
         <input
           type="hidden"
@@ -113,20 +114,20 @@ defmodule DemoWeb.Admin.Fields.EditField do
           phx-hook="EditorFormSync"
           data-field-id={@form[@name].id}
         />
-
+        
     <!-- Help text -->
         <%= if help_text = Backpex.Field.help_text(@field_options, assigns) do %>
           <p class="text-sm text-gray-500 mt-1">{help_text}</p>
         <% end %>
-
+        
     <!-- Field errors -->
         <%= if Enum.any?(@form[@name].errors) do %>
           <div class="text-sm text-red-600 mt-1">
-            <%= @form[@name].errors
-            |> Enum.map(&(Backpex.Field.translate_error_fun(@field_options, assigns).(&1)))
-            |> Enum.map(&("• #{&1}"))
+            {@form[@name].errors
+            |> Enum.map(&Backpex.Field.translate_error_fun(@field_options, assigns).(&1))
+            |> Enum.map(&"• #{&1}")
             |> Enum.join("<br>")
-            |> raw() %>
+            |> raw()}
           </div>
         <% end %>
       </Layout.field_container>
