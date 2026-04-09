@@ -305,8 +305,9 @@ defmodule ExEditor.Editor do
   """
   @spec apply_diff(String.t(), non_neg_integer(), non_neg_integer(), String.t()) ::
           {:ok, String.t()} | {:error, :out_of_bounds}
-  def apply_diff(content, from, to, inserted) when is_binary(content) and
-    is_integer(from) and is_integer(to) and is_binary(inserted) do
+  def apply_diff(content, from, to, inserted)
+      when is_binary(content) and
+             is_integer(from) and is_integer(to) and is_binary(inserted) do
     len = String.length(content)
 
     if from < 0 or to < from or to > len do

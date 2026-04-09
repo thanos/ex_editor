@@ -175,24 +175,20 @@ defmodule ExEditorWeb.LiveEditor do
     editor = socket.assigns.editor
     current_content = Editor.get_content(editor)
 
-    case Editor.apply_diff(current_content, from, to, text) do
-      {:ok, new_content} ->
-        case Editor.set_content(editor, new_content) do
-          {:ok, updated_editor} ->
-            # Notify parent LiveView
-            if on_change = socket.assigns.on_change do
-              send(socket.root_pid, {String.to_atom(on_change), %{content: new_content}})
-            end
+    with {:ok, new_content} <- Editor.apply_diff(current_content, from, to, text),
+         {:ok, updated_editor} <- Editor.set_content(editor, new_content) do
+      if on_change = socket.assigns.on_change do
+        send(socket.root_pid, {String.to_atom(on_change), %{content: new_content}})
+      end
 
-            {:noreply, assign(socket, :editor, updated_editor)}
-
-          {:error, _reason} ->
-            {:noreply, socket}
-        end
-
+      {:noreply, assign(socket, :editor, updated_editor)}
+    else
       {:error, :out_of_bounds} ->
         # Positions don't match server state — silently drop
         # Blur event will trigger a full "change" event to re-sync
+        {:noreply, socket}
+
+      {:error, _reason} ->
         {:noreply, socket}
     end
   end
