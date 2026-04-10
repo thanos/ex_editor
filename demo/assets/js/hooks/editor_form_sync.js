@@ -19,13 +19,66 @@ export default {
     console.log("[EditorFormSync] Initial hidden input value:", initialValue);
 
     // Find the editor component and textarea
+    // The editor is rendered in a preceding sibling container (usually a div.border)
+    // This hook is on the hidden input that comes right after that container
     const findEditor = () => {
-      return document.querySelector(`[phx-hook="EditorHook"]`);
+      // Strategy 1: The editor should be in a direct preceding sibling
+      // (the div that wraps the LiveComponent)
+      let current = hiddenInput.previousElementSibling;
+      while (current) {
+        const editor = current.querySelector(`[phx-hook="EditorHook"]`);
+        if (editor) {
+          console.log("[EditorFormSync] Found editor in previous sibling");
+          return editor;
+        }
+        // Only check immediate preceding siblings, not all ancestors
+        current = current.previousElementSibling;
+      }
+
+      // Strategy 2: Look in the field container (for nested structures)
+      const fieldContainer = hiddenInput.closest("div[class*='field']");
+      if (fieldContainer) {
+        // Get all editors in this container
+        const editorsInContainer = fieldContainer.querySelectorAll(`[phx-hook="EditorHook"]`);
+
+        if (editorsInContainer.length === 1) {
+          // Only one editor in this field - it's the right one
+          console.log("[EditorFormSync] Found single editor in field container");
+          return editorsInContainer[0];
+        } else if (editorsInContainer.length > 1) {
+          // Multiple editors - find the one that comes before this hidden input
+          for (let editor of editorsInContainer) {
+            // Check if this editor comes before the hidden input in document order
+            if (hiddenInput.compareDocumentPosition(editor) === 4) {
+              // DOCUMENT_POSITION_PRECEDING = 4 (editor comes before the input)
+              console.log("[EditorFormSync] Found preceding editor in field");
+              return editor;
+            }
+          }
+        }
+      }
+
+      // Fallback: if only one editor exists on the entire page, use it
+      const allEditors = document.querySelectorAll(`[phx-hook="EditorHook"]`);
+      if (allEditors.length === 1) {
+        console.log("[EditorFormSync] Using single editor (fallback)");
+        return allEditors[0];
+      }
+
+      return null;
     };
 
     const findTextarea = () => {
       const container = findEditor();
-      return container ? container.querySelector('.ex-editor-textarea') : null;
+      if (!container) {
+        console.warn("[EditorFormSync] Could not find editor container");
+        return null;
+      }
+      const textarea = container.querySelector('.ex-editor-textarea');
+      if (textarea) {
+        console.log("[EditorFormSync] Found textarea for field:", fieldId);
+      }
+      return textarea;
     };
 
     // Sync textarea value to hidden input
