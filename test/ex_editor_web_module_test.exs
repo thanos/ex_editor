@@ -6,10 +6,7 @@ defmodule ExEditorWebModuleTest do
 
   describe "ExEditorWeb module exports" do
     test "live_editor function is accessible" do
-      # The function should be exported and callable
-      assert function_exported?(ExEditorWeb, :live_editor, 1)
-
-      # Test calling it
+      # Test calling it works
       assigns = %{id: "test"}
       result = ExEditorWeb.live_editor(assigns)
 
@@ -18,8 +15,7 @@ defmodule ExEditorWebModuleTest do
     end
 
     test "live_editor delegates to ExEditorWeb.LiveEditor" do
-      # Both functions should exist and have same arity
-      assert function_exported?(ExEditorWeb, :live_editor, 1)
+      # LiveEditor module should have the function
       assert function_exported?(ExEditorWeb.LiveEditor, :live_editor, 1)
 
       # They should produce the same result
