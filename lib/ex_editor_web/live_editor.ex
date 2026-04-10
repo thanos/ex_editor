@@ -36,6 +36,7 @@ defmodule ExEditorWeb.LiveEditor do
   """
 
   use Phoenix.LiveComponent
+  import Phoenix.Component
   import Phoenix.HTML
 
   alias ExEditor.{Editor, HighlightedLines}
