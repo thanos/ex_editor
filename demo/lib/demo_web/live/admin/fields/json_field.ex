@@ -39,7 +39,6 @@ defmodule DemoWeb.Admin.Fields.JsonField do
     # Get the field value from the item
     field_value = Map.get(assigns.item, assigns.name)
 
-
     # For index/resource views, show truncated text
     if assigns.live_action in [:index, :resource_action] do
       assigns = assign(assigns, :highlight_field_value, highlight_text(field_value))
@@ -84,7 +83,16 @@ defmodule DemoWeb.Admin.Fields.JsonField do
     field_value = assigns.form[assigns.name]
     content = make_string(field_value && field_value.value) || ""
 
-    assigns = assign(assigns, :content, content)
+    # Format errors for display
+    error_messages =
+      field_value.errors
+      |> Enum.map(&format_error/1)
+      |> Enum.map(&"• #{&1}")
+
+    assigns =
+      assigns
+      |> assign(:content, content)
+      |> assign(:error_messages, error_messages)
 
     ~H"""
     <div>
@@ -122,13 +130,9 @@ defmodule DemoWeb.Admin.Fields.JsonField do
         <% end %>
 
     <!-- Field errors -->
-        <%= if Enum.any?(@form[@name].errors) do %>
+        <%= if Enum.any?(@error_messages) do %>
           <div class="text-sm text-red-600 mt-1">
-            {@form[@name].errors
-            |> Enum.map(&Backpex.Field.translate_error_fun(@field_options, assigns).(&1))
-            |> Enum.map(&"• #{&1}")
-            |> Enum.join("<br>")
-            |> raw()}
+            {raw Enum.join(@error_messages, "<br>")}
           </div>
         <% end %>
       </Layout.field_container>
@@ -163,4 +167,9 @@ defmodule DemoWeb.Admin.Fields.JsonField do
   def make_string(nil), do: ""
   def make_string(content) when is_binary(content), do: content
   def make_string(content), do: Phoenix.json_library().encode!(content)
+
+  defp format_error({msg, _opts}) when is_binary(msg), do: msg
+  defp format_error({msg, _opts}) when is_atom(msg), do: msg |> Atom.to_string() |> String.replace("_", " ")
+  defp format_error(msg) when is_binary(msg), do: msg
+  defp format_error(msg) when is_atom(msg), do: msg |> Atom.to_string() |> String.replace("_", " ")
 end

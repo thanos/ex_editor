@@ -442,27 +442,12 @@ defmodule DemoWeb.CoreComponents do
     )
   end
 
-  @doc """
-  Translates an error message using gettext.
-  """
-  def translate_error({msg, opts}) do
-    # You can make use of gettext to translate error messages by
-    # uncommenting and adjusting the following code:
 
-    # if count = opts[:count] do
-    #   Gettext.dngettext(DemoWeb.Gettext, "errors", msg, msg, count, opts)
-    # else
-    #   Gettext.dgettext(DemoWeb.Gettext, "errors", msg, opts)
-    # end
-
-    Enum.reduce(opts, msg, fn {key, value}, acc ->
-      String.replace(acc, "%{#{key}}", fn _ -> to_string(value) end)
-    end)
-  end
 
   @doc """
   Translates the errors for a field from a keyword list of errors.
   """
+
   # def translate_errors(errors, field) when is_list(errors) do
   #   for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   # end
