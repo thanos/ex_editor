@@ -77,7 +77,7 @@ defmodule ExEditor.MixProject do
       extras: [
         "README.md",
         "CHANGELOG.md",
-        "LICENSE.md",
+        "LICENSE",
         "guides/plugins.md",
         "guides/integration.md"
       ],
