@@ -45,6 +45,7 @@ defmodule Demo.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      {:live_debugger, "~> 0.7", only: [:dev]},
       {:tidewave, "~> 0.5", only: [:dev]},
       {:igniter, "~> 0.6", only: [:dev, :test]},
       {:ex_editor, path: ".."},

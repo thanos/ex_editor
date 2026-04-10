@@ -85,8 +85,10 @@ defmodule DemoWeb.Admin.CodeSnippetMultipleEditorsTest do
       args_editor_count = html |> String.split(~s(id="editor_args")) |> length()
 
       # Should have exactly one of each
-      assert code_editor_count == 2  # 1 split means it appeared once
-      assert args_editor_count == 2  # 1 split means it appeared once
+      # 1 split means it appeared once
+      assert code_editor_count == 2
+      # 1 split means it appeared once
+      assert args_editor_count == 2
     end
   end
 

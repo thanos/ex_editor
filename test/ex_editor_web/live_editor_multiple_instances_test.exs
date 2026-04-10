@@ -10,7 +10,9 @@ defmodule ExEditorWeb.LiveEditorMultipleInstancesTest do
   import Phoenix.LiveViewTest
 
   setup do
-    {:ok, _pid} = start_supervised(Phoenix.PubSub.child_spec(name: :test_pubsub))
+    # Use unique name for each test to avoid conflicts
+    pubsub_name = :"test_pubsub_#{System.unique_integer()}"
+    {:ok, _pid} = start_supervised(Phoenix.PubSub.child_spec(name: pubsub_name))
     :ok
   end
 

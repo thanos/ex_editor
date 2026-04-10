@@ -71,10 +71,13 @@ defmodule DemoWeb.Admin.BackpexFormSyncRegressionTest do
 
       # Extract content between the two textareas
       [_before_code, code_and_after] = String.split(html, ~s(id="editor_code-textarea"), parts: 2)
+
       [code_textarea_content, between_editors] =
         String.split(code_and_after, "</textarea>", parts: 2)
 
-      [_before_args, args_and_after] = String.split(between_editors, ~s(id="editor_args-textarea"), parts: 2)
+      [_before_args, args_and_after] =
+        String.split(between_editors, ~s(id="editor_args-textarea"), parts: 2)
+
       [args_textarea_content, _rest] = String.split(args_and_after, "</textarea>", parts: 2)
 
       # Code textarea should have code keywords, not JSON

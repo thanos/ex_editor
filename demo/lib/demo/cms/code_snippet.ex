@@ -12,7 +12,6 @@ defmodule Demo.CMS.CodeSnippet do
 
   @doc false
   def changeset(code_snippet, attrs, _meta \\ []) do
-    attrs |> dbg()
     attrs = parse_json_field(attrs, "args")
 
     code_snippet

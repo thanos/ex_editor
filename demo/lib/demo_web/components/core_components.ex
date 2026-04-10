@@ -442,8 +442,6 @@ defmodule DemoWeb.CoreComponents do
     )
   end
 
-
-
   @doc """
   Translates the errors for a field from a keyword list of errors.
   """
