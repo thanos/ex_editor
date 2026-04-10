@@ -50,40 +50,69 @@ mix phx.server
 
 Now visit [`http://localhost:4000`](http://localhost:4000) in your browser.
 
-You should see the ExEditor demo with:
-- A header showing "ExEditor Demo"
-- Cursor position badge (Ln/Col)
-- Side-by-side editor and raw content view
-- Sample Elixir code loaded in the editor
+### Demo Pages
+
+**Main Editor** - [http://localhost:4000](http://localhost:4000)
+- Interactive editor with side-by-side preview
+- Sample Elixir code with syntax highlighting
+- Real-time content synchronization
+
+**Backpex Admin** - [http://localhost:4000/admin/code_snippets](http://localhost:4000/admin/code_snippets)
+- Full CRUD interface for code snippets
+- CodeField: Elixir syntax-highlighted code editing
+- JsonField: JSON configuration editing with pretty-print
+- Custom fields demonstrate Backpex integration patterns
 
 ## Features Demonstrated
 
-### 1. Real-time Content Synchronization
+### 1. Real-time Content Synchronization with LiveView
 
-The demo shows how ExEditor integrates with LiveView for real-time updates:
+The demo shows how ExEditor integrates with Phoenix LiveView for real-time updates:
 
 ```elixir
-def handle_event("update_content", %{"content" => content}, socket) do
-  case ExEditor.Editor.set_content(socket.assigns.editor, content) do
-    {:ok, updated_editor} ->
-      {:noreply, assign(socket, :editor, updated_editor)}
+def handle_info({:code_changed, %{content: new_code}}, socket) do
+  {:noreply, assign(socket, :code, new_code)}
+end
+```
+
+### 2. Backpex Admin Panel Integration
+
+Custom Backpex field implementations for structured data editing:
+
+- **CodeField** - Syntax-highlighted Elixir code editing with line numbers
+- **JsonField** - JSON configuration editing with JSON syntax highlighting
+
+```elixir
+defmodule DemoWeb.Admin.Fields.CodeField do
+  use Backpex.Field, config_schema: @config_schema
+
+  def render_form(assigns) do
+    # Uses ExEditorWeb.LiveEditor with Elixir highlighting
+    # Syncs with form via EditorFormSync hook
   end
 end
 ```
 
-### 2. JavaScript Hook Integration
+### 3. JavaScript Hook Integration
 
-The `EditorSync` hook (`assets/js/hooks/editor_sync.js`) demonstrates:
-- Content change detection with debouncing
-- Cursor position tracking
-- Event communication with LiveView
+Two specialized hooks handle textarea synchronization:
 
-### 3. Custom Styling
+- **EditorHook** (`assets/js/hooks/editor.js`) - Core editor functionality
+  - Scroll synchronization between textarea and highlight layer
+  - Incremental diff computation (50ms debounce)
+  - Line number updating
 
-Shows how to apply custom themes to ExEditor:
-- VS Code dark theme colors
-- Custom scrollbars
-- Syntax highlighting ready
+- **EditorFormSync** (`assets/js/hooks/editor_form_sync.js`) - Form integration
+  - Syncs editor content to hidden form inputs
+  - Triggers form validation on changes
+
+### 4. Professional Styling & UX
+
+- VS Code dark theme colors with customizable CSS
+- Monospace font rendering for consistent character widths
+- Smooth scroll synchronization
+- High-performance incremental diff updates
+- Native browser caret for accurate cursor positioning
 
 ## Project Structure
 
@@ -95,12 +124,26 @@ demo/
 │   └── js/
 │       ├── app.js      # Main JS entry point
 │       └── hooks/
-│           └── editor_sync.js  # EditorSync hook
+│           ├── editor.js              # Core editor hook (scroll, diffs, line numbers)
+│           └── editor_form_sync.js    # Form synchronization hook
 ├── lib/
 │   ├── demo/           # Application code
+│   │   └── cms/
+│   │       └── code_snippet.ex  # Ecto schema for code snippets
 │   └── demo_web/       # Web interface
-│       └── live/
-│           └── editor_live.ex  # Main demo LiveView
+│       ├── live/
+│       │   ├── editor_live.ex         # Main editor demo
+│       │   └── admin/
+│       │       ├── code_snippet_live.ex    # Backpex resource
+│       │       └── fields/
+│       │           ├── code_field.ex       # Custom field for Elixir code
+│       │           └── json_field.ex       # Custom field for JSON
+│       └── endpoint.ex  # Phoenix endpoint
+├── priv/
+│   └── repo/
+│       ├── migrations/
+│       │   └── *_create_code_snippets.exs
+│       └── seeds.exs    # Sample code snippets
 ├── test/               # Tests
 └── mix.exs            # Dependencies (includes {:ex_editor, path: ".."})
 ```
@@ -140,6 +183,123 @@ mix phx.server
 mix assets.build
 ```
 
+## Backpex Admin Integration
+
+This demo showcases how to integrate ExEditor into Backpex admin panels with custom field types.
+
+### Custom Fields Implementation
+
+**CodeField** - For syntax-highlighted code editing:
+
+```elixir
+# lib/demo_web/live/admin/fields/code_field.ex
+defmodule DemoWeb.Admin.Fields.CodeField do
+  use Backpex.Field, config_schema: @config_schema
+
+  @impl Backpex.Field
+  def render_form(assigns) do
+    ~H"""
+    <div class="mb-2 h-96 border border-gray-300 rounded-lg overflow-hidden">
+      <.live_component
+        module={ExEditorWeb.LiveEditor}
+        id={"editor_#{@name}"}
+        content={@content}
+        language={:elixir}
+        on_change="code_changed"
+        debounce={100}
+      />
+    </div>
+
+    <input
+      type="hidden"
+      name={@form[@name].name}
+      value={@content}
+      phx-hook="EditorFormSync"
+      data-field-id={@form[@name].id}
+    />
+    """
+  end
+end
+```
+
+**JsonField** - For JSON configuration editing:
+
+```elixir
+# lib/demo_web/live/admin/fields/json_field.ex
+defmodule DemoWeb.Admin.Fields.JsonField do
+  use Backpex.Field, config_schema: @config_schema
+
+  @impl Backpex.Field
+  def render_form(assigns) do
+    ~H"""
+    <div class="mb-2 h-96 border border-gray-300 rounded-lg overflow-hidden">
+      <.live_component
+        module={ExEditorWeb.LiveEditor}
+        id={"editor_#{@name}"}
+        content={@content}
+        language={:json}
+        on_change="code_changed"
+        debounce={100}
+      />
+    </div>
+
+    <input
+      type="hidden"
+      name={@form[@name].name}
+      value={@content}
+      phx-hook="EditorFormSync"
+      data-field-id={@form[@name].id}
+    />
+    """
+  end
+end
+```
+
+### Usage in Backpex Resources
+
+```elixir
+defmodule DemoWeb.Admin.CodeSnippetLive do
+  use Backpex.LiveResource,
+    adapter_config: [
+      schema: CodeSnippet,
+      repo: Demo.Repo,
+      update_changeset: &CodeSnippet.changeset/3,
+      create_changeset: &CodeSnippet.changeset/3
+    ]
+
+  @impl Backpex.LiveResource
+  def fields do
+    [
+      name: %{module: Backpex.Fields.Text, label: "Name"},
+      code: %{module: DemoWeb.Admin.Fields.CodeField, label: "Code", rows: 10},
+      args: %{module: DemoWeb.Admin.Fields.JsonField, label: "Args (JSON)", rows: 5}
+    ]
+  end
+end
+```
+
+### Form Synchronization Hook
+
+The `EditorFormSync` hook syncs textarea changes to the hidden form input:
+
+```javascript
+// assets/js/hooks/editor_form_sync.js
+export default {
+  mounted() {
+    const editor = this.el.querySelector('[phx-hook="EditorHook"]');
+    if (!editor) return;
+
+    const textarea = editor.querySelector('.ex-editor-textarea');
+    const syncInput = document.querySelector(`[data-field-id="${this.el.dataset.fieldId}"]`);
+
+    textarea.addEventListener('input', () => {
+      syncInput.value = textarea.value;
+      syncInput.dispatchEvent(new Event('change'));
+    });
+  }
+};
+```
+
 ## Customization
 
 ### Changing the Theme
@@ -147,23 +307,33 @@ mix assets.build
 Edit `assets/css/app.css` to customize colors:
 
 ```css
-@plugin "../vendor/daisyui-theme" {
-  name: "dark";
-  --color-base-100: oklch(15% 0.01 252);  /* Background */
-  --color-base-content: oklch(83% 0.01 252);  /* Text */
-  /* ... */
+.ex-editor-container {
+  background: #1e1e1e;
+  color: #d4d4d4;
 }
 ```
 
-### Adding Features
+### Extending Field Types
 
-The demo is designed to be extended. Try adding:
+Create custom Backpex fields for other languages:
 
-1. **Syntax highlighting** - Integrate a syntax highlighter
-2. **Line numbers** - Display line numbers in the gutter
-3. **Search/replace** - Add find and replace functionality
-4. **Multiple files** - Support switching between files
-5. **Collaborative editing** - Add real-time collaboration
+```elixir
+defmodule DemoWeb.Admin.Fields.RustField do
+  use Backpex.Field, config_schema: @config_schema
+
+  def render_form(assigns) do
+    ~H"""
+    <.live_component
+      module={ExEditorWeb.LiveEditor}
+      id={"editor_#{@name}"}
+      content={@content}
+      language={:rust}
+      on_change="code_changed"
+    />
+    """
+  end
+end
+```
 
 ## Troubleshooting
 
