@@ -43,11 +43,6 @@ defmodule DemoWeb.Admin.CodeSnippetLive do
 
   def item_query(query, _, _assigns), do: query
 
-  # Handle code_changed events from the LiveEditor component
-  def handle_info({:code_changed, %{content: new_code}}, socket) do
-    {:noreply, assign(socket, :editor_content, new_code)}
-  end
-
   @impl Backpex.LiveResource
   def fields do
     [

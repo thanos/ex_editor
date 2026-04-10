@@ -37,7 +37,7 @@ defmodule DemoWeb.Admin.Fields.JsonField do
   @impl Backpex.Field
   def render_value(assigns) do
     # Get the field value from the item
-    field_value = Map.get(assigns.item, assigns.name)
+    field_value = Map.get(assigns.item, assigns.name) |> make_string()
 
     # For index/resource views, show truncated text
     if assigns.live_action in [:index, :resource_action] do
@@ -48,11 +48,11 @@ defmodule DemoWeb.Admin.Fields.JsonField do
       """
     else
       # For show view, display with line numbers similar to editor
-      render_code_with_lines(field_value)
+      render_args_with_lines(field_value)
     end
   end
 
-  defp render_code_with_lines(content) do
+  defp render_args_with_lines(content) do
     assigns = %{content: content}
 
     ~H"""
@@ -81,7 +81,27 @@ defmodule DemoWeb.Admin.Fields.JsonField do
   def render_form(assigns) do
     # Get the field value from the form field
     field_value = assigns.form[assigns.name]
-    content = make_string(field_value && field_value.value) || ""
+
+    # Extract content, handling form field values and database values
+    # The form field value can be: string (from form submission), map (from database), or empty
+    content =
+      case field_value && field_value.value do
+        val when is_binary(val) and val != "" ->
+          # Non-empty string value from form submission
+          val
+
+        val when is_map(val) and map_size(val) > 0 ->
+          # Non-empty map from database/form
+          make_string(val)
+
+        _other ->
+          # Empty or nil value - check database for original value
+          case assigns.item && Map.get(assigns.item, assigns.name) do
+            val when is_map(val) and map_size(val) > 0 -> make_string(val)
+            val when is_binary(val) and val != "" -> val
+            _ -> ""
+          end
+      end
 
     # Format errors for display
     error_messages =
@@ -93,7 +113,6 @@ defmodule DemoWeb.Admin.Fields.JsonField do
       assigns
       |> assign(:content, content)
       |> assign(:error_messages, error_messages)
-
     ~H"""
     <div>
       <Layout.field_container>
@@ -108,7 +127,7 @@ defmodule DemoWeb.Admin.Fields.JsonField do
             id={"editor_#{@name}"}
             content={@content}
             language={:elixir}
-            on_change="code_changed"
+            on_change="args_changed"
             debounce={100}
             readonly={@readonly}
           />
@@ -166,7 +185,15 @@ defmodule DemoWeb.Admin.Fields.JsonField do
 
   def make_string(nil), do: ""
   def make_string(content) when is_binary(content), do: content
-  def make_string(content), do: Phoenix.json_library().encode!(content)
+
+  def make_string(content) when is_map(content) do
+    case Phoenix.json_library().encode(content) do
+      {:ok, json} -> json
+      {:error, _} -> ""
+    end
+  end
+
+  def make_string(_content), do: ""
 
   defp format_error({msg, _opts}) when is_binary(msg), do: msg
   defp format_error({msg, _opts}) when is_atom(msg), do: msg |> Atom.to_string() |> String.replace("_", " ")

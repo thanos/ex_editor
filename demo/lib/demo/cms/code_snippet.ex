@@ -12,6 +12,7 @@ defmodule Demo.CMS.CodeSnippet do
 
   @doc false
   def changeset(code_snippet, attrs, _meta \\ []) do
+    attrs |> dbg()
     attrs = parse_json_field(attrs, "args")
 
     code_snippet
@@ -22,12 +23,33 @@ defmodule Demo.CMS.CodeSnippet do
   defp parse_json_field(attrs, key) when is_map(attrs) do
     case Map.get(attrs, key) do
       value when is_binary(value) and value != "" ->
+        # Try to parse JSON string to map
         case Jason.decode(value) do
-          {:ok, parsed} -> Map.put(attrs, key, parsed)
-          {:error, _} -> attrs
+          {:ok, parsed} when is_map(parsed) ->
+            Map.put(attrs, key, parsed)
+
+          {:ok, _other} ->
+            # JSON is valid but not an object - store as-is
+            attrs
+
+          {:error, _} ->
+            # Invalid JSON - keep the string as-is and let validation handle it
+            attrs
         end
 
-      _ ->
+      value when is_map(value) ->
+        # Already a map, keep as-is
+        attrs
+
+      "" ->
+        # Empty string - set to empty map
+        Map.put(attrs, key, %{})
+
+      nil ->
+        # nil - set to empty map
+        Map.put(attrs, key, %{})
+
+      _other ->
         attrs
     end
   end
