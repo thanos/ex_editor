@@ -79,35 +79,9 @@ defmodule DemoWeb.Admin.Fields.JsonField do
 
   @impl Backpex.Field
   def render_form(assigns) do
-    # Get the field value from the form field
     field_value = assigns.form[assigns.name]
-
-    # Extract content, handling form field values and database values
-    # The form field value can be: string (from form submission), map (from database), or empty
-    content =
-      case field_value && field_value.value do
-        val when is_binary(val) and val != "" ->
-          # Non-empty string value from form submission
-          val
-
-        val when is_map(val) and map_size(val) > 0 ->
-          # Non-empty map from database/form
-          make_string(val)
-
-        _other ->
-          # Empty or nil value - check database for original value
-          case assigns.item && Map.get(assigns.item, assigns.name) do
-            val when is_map(val) and map_size(val) > 0 -> make_string(val)
-            val when is_binary(val) and val != "" -> val
-            _ -> ""
-          end
-      end
-
-    # Format errors for display
-    error_messages =
-      field_value.errors
-      |> Enum.map(&format_error/1)
-      |> Enum.map(&"• #{&1}")
+    content = extract_content(field_value, assigns)
+    error_messages = format_error_messages(field_value)
 
     assigns =
       assigns
@@ -182,6 +156,54 @@ defmodule DemoWeb.Admin.Fields.JsonField do
     editor = ExEditor.Editor.new(content: make_string(content))
     editor = ExEditor.Editor.set_highlighter(editor, ExEditor.Highlighters.JSON)
     ExEditor.Editor.get_highlighted_content(editor)
+  end
+
+  # Extract content from form field value or database value
+  defp extract_content(field_value, assigns) do
+    cond do
+      non_empty_string?(field_value) ->
+        field_value.value
+
+      non_empty_map?(field_value) ->
+        make_string(field_value.value)
+
+      true ->
+        fallback_to_database(assigns)
+    end
+  end
+
+  # Get content from database when form value is empty
+  defp fallback_to_database(assigns) do
+    value = assigns.item && Map.get(assigns.item, assigns.name)
+
+    cond do
+      non_empty_map?(value) -> make_string(value)
+      is_binary(value) and value != "" -> value
+      true -> ""
+    end
+  end
+
+  # Check if form field value is a non-empty string
+  defp non_empty_string?(field_value) when is_map(field_value) do
+    field_value && is_binary(field_value.value) && field_value.value != ""
+  end
+
+  defp non_empty_string?(_), do: false
+
+  # Check if form field value is a non-empty map (form field structure)
+  defp non_empty_map?(field_value) do
+    if is_map(field_value) && Map.has_key?(field_value, :value) do
+      is_map(field_value.value) && map_size(field_value.value) > 0
+    else
+      is_map(field_value) && map_size(field_value) > 0
+    end
+  end
+
+  # Format error messages for display
+  defp format_error_messages(field_value) do
+    field_value.errors
+    |> Enum.map(&format_error/1)
+    |> Enum.map(&"• #{&1}")
   end
 
   def make_string(nil), do: ""

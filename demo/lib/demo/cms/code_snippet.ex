@@ -20,36 +20,26 @@ defmodule Demo.CMS.CodeSnippet do
   end
 
   defp parse_json_field(attrs, key) when is_map(attrs) do
-    case Map.get(attrs, key) do
-      value when is_binary(value) and value != "" ->
-        # Try to parse JSON string to map
-        case Jason.decode(value) do
-          {:ok, parsed} when is_map(parsed) ->
-            Map.put(attrs, key, parsed)
+    value = Map.get(attrs, key)
+    parse_json_value(attrs, key, value)
+  end
 
-          {:ok, _other} ->
-            # JSON is valid but not an object - store as-is
-            attrs
-
-          {:error, _} ->
-            # Invalid JSON - keep the string as-is and let validation handle it
-            attrs
-        end
-
-      value when is_map(value) ->
-        # Already a map, keep as-is
-        attrs
-
-      "" ->
-        # Empty string - set to empty map
-        Map.put(attrs, key, %{})
-
-      nil ->
-        # nil - set to empty map
-        Map.put(attrs, key, %{})
-
-      _other ->
-        attrs
+  # Handle non-empty string values by attempting JSON decode
+  defp parse_json_value(attrs, key, value) when is_binary(value) and value != "" do
+    case Jason.decode(value) do
+      {:ok, parsed} when is_map(parsed) -> Map.put(attrs, key, parsed)
+      _ -> attrs
     end
   end
+
+  # Handle map values - keep as-is
+  defp parse_json_value(attrs, _key, value) when is_map(value), do: attrs
+
+  # Handle empty string and nil - convert to empty map
+  defp parse_json_value(attrs, key, value) when value == "" or is_nil(value) do
+    Map.put(attrs, key, %{})
+  end
+
+  # Handle any other value - keep as-is
+  defp parse_json_value(attrs, _key, _value), do: attrs
 end
